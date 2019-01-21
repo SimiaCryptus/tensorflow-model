@@ -25,7 +25,7 @@
         <groupId>com.simiacryptus</groupId>
         <artifactId>java-parent</artifactId>
         <version>1.5.1</version>
-        <relativePath>../scala-parent</relativePath>
+        <relativePath>../java-parent</relativePath>
     </parent>
 
     <artifactId>tensorflow-model</artifactId>
