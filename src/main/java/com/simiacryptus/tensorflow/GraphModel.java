@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2019 by Andrew Charneski.
+ *
+ * The author licenses this file to you under the
+ * Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance
+ * with the License.  You may obtain a copy
+ * of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package com.simiacryptus.tensorflow;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -6,10 +25,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.tensorflow.framework.*;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.DoubleSummaryStatistics;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -22,6 +38,17 @@ public class GraphModel {
   public GraphModel(byte[] bytes) {
     this.graphDef = parseGraph(bytes);
     this.nodeMap = graphDef.getNodeList().stream().collect(Collectors.toMap(x -> x.getName(), x -> x));
+  }
+
+  public Map<String, GraphNode> getNodes() {
+    return this.nodeMap.entrySet().stream().collect(Collectors.toMap(x->x.getKey(), x->getChild(x.getKey())));
+  }
+
+  public List<String> getRootNodes() {
+    return getNodes().entrySet().stream()
+        .filter(potentialRoot->!getNodes().values().stream().filter(node->node.getInputKeys().contains(potentialRoot.getKey())).findAny().isPresent())
+        .map(x->x.getKey())
+        .collect(Collectors.toList());
   }
 
   public static GraphDef parseGraph(byte[] bytes) {
@@ -45,7 +72,6 @@ public class GraphModel {
       this.nodeDef = nodeMap.get(this.name);
       assert name.equals(nodeDef.getName());
       this.op = nodeDef.getOp();
-      Map<String, AttrValue> attrMap = nodeDef.getAttrMap();
     }
 
     @Override
@@ -70,7 +96,7 @@ public class GraphModel {
       }
     }
 
-    public String getDataSummary() {
+    public Object getDataSummary() {
       return summary(getData());
     }
 
@@ -95,7 +121,8 @@ public class GraphModel {
 
     @JsonIgnore
     public int[] getInts() {
-      return GraphModel.getInts(getTensor().getTensorContent().asReadOnlyByteBuffer());
+      TensorProto tensor = getTensor();
+      return null==tensor?null:GraphModel.getInts(tensor.getTensorContent().asReadOnlyByteBuffer());
     }
 
     @JsonIgnore
@@ -104,20 +131,78 @@ public class GraphModel {
       return !attrMap.containsKey("value") ? null : attrMap.get("value").getTensor();
     }
 
-    @JsonIgnore
-    public TensorShapeProto getShape() {
+    public long[] getShape() {
       Map<String, AttrValue> attrMap = nodeDef.getAttrMap();
+      TensorShapeProto shape;
       if (attrMap.containsKey("shape")) {
-        return attrMap.get("shape").getShape();
+
+        shape = attrMap.get("shape").getShape();
       } else if (attrMap.containsKey("value")) {
-        return attrMap.get("value").getTensor().getTensorShape();
+        shape = attrMap.get("value").getTensor().getTensorShape();
       } else {
         return null;
       }
+      return shape.getDimList().stream().mapToLong(x->x.getSize()).toArray();
     }
 
+    public List<String> getInputKeys() {
+      return getInputs().stream().map(x->x.name).collect(Collectors.toList());
+    }
+
+    @JsonIgnore
     public List<GraphNode> getInputs() {
       return this.nodeDef.getInputList().stream().map(x->getChild(x)).collect(Collectors.toList());
+    }
+
+    private volatile Integer order = null;
+    public int getOrder() {
+      if(null == order) {
+        synchronized (this) {
+          if(null == order) {
+            order = getInputs().stream().mapToInt(x -> x.getOrder()).max().orElseGet(() -> -1) + 1;
+          }
+        }
+      }
+      return order;
+    }
+
+    public List<String> getRootKeys() {
+      return getRootInputs().stream().map(x->x.name).collect(Collectors.toList());
+    }
+
+    private volatile List<GraphNode> rootInputs = null;
+    @JsonIgnore
+    public List<GraphNode> getRootInputs() {
+      if(null == rootInputs) {
+        synchronized(this) {
+          if(null == rootInputs) {
+            if(getInputs().isEmpty()) {
+              if(op.equals("Placeholder")) {
+                rootInputs = Arrays.asList(this);
+              } else {
+                rootInputs = Arrays.asList();
+              }
+            } else {
+              rootInputs = getInputs().stream().flatMap(input -> input.getRootInputs().stream()).distinct().collect(Collectors.toList());
+            }
+          }
+        }
+      }
+      return rootInputs;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      GraphNode graphNode = (GraphNode) o;
+      return Objects.equals(name, graphNode.name);
+    }
+
+    @Override
+    public int hashCode() {
+
+      return Objects.hash(name);
     }
   }
 
@@ -128,12 +213,20 @@ public class GraphModel {
     return null==values?null:Arrays.stream(values).mapToDouble(x -> x).toArray();
   }
 
-  public static String summary(double[] values) {
-    if(null == values) return "";
+  public static HashMap<String, Double> summary(double[] values) {
+    if(null == values) return null;
     DoubleSummaryStatistics finiteStatistics = Arrays.stream(values).filter(x -> Double.isFinite(x)).summaryStatistics();
     long nanCount = Arrays.stream(values).filter(x -> Double.isNaN(x)).count();
     long infCount = Arrays.stream(values).filter(x -> Double.isInfinite(x)).count();
-    return String.format("Finite=%s; NaN=%s; Inf=%s", finiteStatistics, nanCount, infCount);
+    HashMap<String, Double> data = new HashMap<>();
+    data.put("min",finiteStatistics.getMin());
+    data.put("max",finiteStatistics.getMax());
+    data.put("sum",finiteStatistics.getSum());
+    data.put("avg",finiteStatistics.getAverage());
+    data.put("finiteCount", (double) finiteStatistics.getCount());
+    data.put("nanCount", (double) nanCount);
+    data.put("infCount", (double) infCount);
+    return data;
   }
 
   private final ConcurrentHashMap<String, GraphNode> nodeCache = new ConcurrentHashMap<>();
