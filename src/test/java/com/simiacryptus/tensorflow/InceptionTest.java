@@ -19,17 +19,80 @@
 
 package com.simiacryptus.tensorflow;
 
+import com.simiacryptus.notebook.MarkdownNotebookOutput;
+import com.simiacryptus.util.test.SysOutInterceptor;
+import org.apache.commons.io.IOUtils;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.Test;
+import org.tensorflow.Graph;
 import org.tensorflow.Output;
+
+import javax.imageio.ImageIO;
+import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import static com.simiacryptus.tensorflow.TestUtil.find;
 
 public class InceptionTest {
+
+  static {
+    SysOutInterceptor.INSTANCE.init();
+  }
+
   @Test
-  public void testModelJson() throws Exception {
+  public void testClassification() throws Exception {
+    File reportFile = new File("target/out/" + new SimpleDateFormat("yyyyMMddHHmm").format(new Date()));
+    MarkdownNotebookOutput log = new MarkdownNotebookOutput(reportFile, true);
+    InceptionClassifier classifier = new InceptionClassifier();
+    String logDir = classifier.eventWriterLocation.getAbsolutePath();
+    try {
+      CloseableHttpClient client = HttpClientBuilder.create().build();
+      for (String keyword : Arrays.asList("dog", "cat", "ship", "city")) {
+        log.h1("Image Category: " + keyword);
+        byte[] bytes = IOUtils.toByteArray(client.execute(new HttpGet("https://loremflickr.com/320/240/" + keyword)).getEntity().getContent());
+        log.p(log.jpg(ImageIO.read(new ByteArrayInputStream(bytes)), "Random Image"));
+        log.run(() -> {
+          double[] predictions = classifier.predictImgBytes(bytes);
+          int[] topValues = IntStream.range(0, predictions.length).mapToObj(x -> x).sorted(Comparator.comparing(i -> -predictions[i])).limit(5).mapToInt(i -> i).toArray();
+          for (int index : topValues) {
+            System.out.println(String.format("%s = %.3f%%", classifier.labels.get(index), predictions[index] * 100.0));
+          }
+        });
+      }
+    } finally {
+      log.close();
+      classifier.close();
+    }
+
+    for (File file : TestUtil.allFiles(new File(logDir))) {
+      TestUtil.dumpEvents(file.getAbsolutePath());
+    }
+
+    TestUtil.launchTensorboard(logDir, tensorboard-> {
+      try {
+        tensorboard.waitFor(1, TimeUnit.MINUTES);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  @Test
+  public void dumpModelJson() throws Exception {
     byte[] protobufBinaryData = loadGraphDef();
     GraphModel model = new GraphModel(protobufBinaryData);
     System.out.println("Model: " + TestUtil.toJson(model));
+    try (Graph graph = new Graph()) {
+      graph.importGraphDef(model.graphDef.toByteArray());
+      System.out.println(TestUtil.describeGraph(graph));
+    }
   }
 
   @Test
