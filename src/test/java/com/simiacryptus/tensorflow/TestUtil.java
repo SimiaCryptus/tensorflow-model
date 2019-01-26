@@ -29,11 +29,12 @@ import org.tensorflow.Graph;
 import org.tensorflow.Operation;
 import org.tensorflow.Output;
 import org.tensorflow.Tensor;
+import org.tensorflow.util.Event;
 
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
+import java.awt.*;
+import java.io.*;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.function.Consumer;
@@ -98,5 +99,33 @@ public class TestUtil {
       }
     }
     return stringOutputStream.toString();
+  }
+
+  public static File[] allFiles(File file) {
+    if(file.isFile()) return new File[]{ file };
+    else return Arrays.stream(file.listFiles()).flatMap(f-> Arrays.stream(allFiles(f))).toArray(i->new File[i]);
+  }
+
+  public static void launchTensorboard(String logDir, Consumer<Process> waiter) throws IOException, URISyntaxException, InterruptedException {
+    Process tensorboard = new ProcessBuilder().command(
+        System.getProperty("tensorboard", System.getProperty("user.home") + "\\AppData\\Local\\Programs\\Python\\Python36\\Scripts\\tensorboard.exe"),
+        "--logdir=" + logDir
+    ).start();
+    Desktop.getDesktop().browse(new URI("http://localhost:6006/"));
+    try {
+      waiter.accept(tensorboard);
+    } finally {
+      if(tensorboard.isAlive()) tensorboard.destroyForcibly();
+    }
+  }
+
+  public static void dumpEvents(String file) throws IOException {
+    InputStream inputStream = new FileInputStream(file);
+    inputStream = new BufferedInputStream(inputStream);
+    DataInputStream dataInput = new DataInputStream(inputStream);
+    while (dataInput.available() > 0) {
+      org.tensorflow.util.Event event = Event.parseFrom(TensorboardEventWriter.read(dataInput));
+      System.out.println(event);
+    }
   }
 }
