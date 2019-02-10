@@ -59,7 +59,6 @@ public class NodeInstrumentation {
             .putAttr("N", AttrValue.newBuilder().setI(nodeDefs.size()).build())
             .build());
       }
-      ;
       return graphBuilder;
     });
     TensorflowUtil.validate(graphDef);
