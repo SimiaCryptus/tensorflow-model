@@ -60,12 +60,6 @@
             <artifactId>java-util</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>2.9.6</version>
-        </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -79,55 +73,55 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>3.6.1</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.tensorflow</groupId>
             <artifactId>tensorflow</artifactId>
-            <version>1.12.0</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.tensorflow</groupId>
             <artifactId>libtensorflow_jni_gpu</artifactId>
-            <version>1.12.0</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.tensorflow</groupId>
             <artifactId>proto</artifactId>
-            <version>1.12.0</version>
         </dependency>
         <dependency>
             <groupId>org.tensorflow</groupId>
             <artifactId>tensorflow</artifactId>
-            <version>1.12.0</version>
         </dependency>
         <dependency>
             <groupId>org.tensorflow</groupId>
             <artifactId>libtensorflow_jni_gpu</artifactId>
-            <version>1.12.0</version>
         </dependency>
         <dependency>
             <groupId>org.xerial.snappy</groupId>
             <artifactId>snappy-java</artifactId>
-            <version>1.1.7.2</version>
             <type>jar</type>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>15.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.simiacryptus</groupId>
+            <artifactId>literate-reporting</artifactId>
+            <version>1.6.0</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

@@ -20,22 +20,21 @@
 
 package com.simiacryptus.tensorflow;
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.simiacryptus.util.Util;
 import org.apache.commons.io.IOUtils;
-import org.tensorflow.*;
+import org.tensorflow.Graph;
+import org.tensorflow.Output;
+import org.tensorflow.Session;
+import org.tensorflow.Tensor;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.Summary;
 import org.tensorflow.op.Ops;
 import org.tensorflow.op.core.DecodeJpeg;
-import org.tensorflow.util.SessionLog;
-import org.tensorflow.util.TaggedRunMetadata;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
