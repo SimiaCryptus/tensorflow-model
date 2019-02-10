@@ -25,6 +25,7 @@ import org.tensorflow.framework.MetaGraphDef;
 import org.tensorflow.framework.RunMetadata;
 import org.tensorflow.framework.Summary;
 import org.tensorflow.util.Event;
+import org.tensorflow.util.LogMessage;
 import org.tensorflow.util.SessionLog;
 import org.tensorflow.util.TaggedRunMetadata;
 
@@ -43,10 +44,11 @@ import java.net.InetAddress;
 public class TensorboardEventWriter implements AutoCloseable {
   public final File location;
   private volatile FileOutputStream fileOutputStream = null;
+  private long step = 0;
 
   public TensorboardEventWriter(File location, GraphDef graphDef) throws IOException {
     this.location = location;
-    location.getParentFile().mkdirs();
+    location.getAbsoluteFile().getParentFile().mkdirs();
     write(graphDef);
   }
 
@@ -125,6 +127,12 @@ public class TensorboardEventWriter implements AutoCloseable {
         .build());
   }
 
+  public void write(LogMessage message) throws IOException {
+    write(Event.newBuilder()
+        .setLogMessage(message)
+        .build());
+  }
+
   public void write(SessionLog sessionLog) throws IOException {
     write(Event.newBuilder()
         .setSessionLog(sessionLog)
@@ -159,6 +167,7 @@ public class TensorboardEventWriter implements AutoCloseable {
     OutputStream output = getOutput();
     write(output, event.toBuilder()
         .setWallTime(System.currentTimeMillis() / 1000)
+        .setStep(getStep())
         .build()
         .toByteArray());
     output.flush();
@@ -210,5 +219,19 @@ public class TensorboardEventWriter implements AutoCloseable {
       }
     }
     return hostName;
+  }
+
+  public long getStep() {
+    return step;
+  }
+
+  public TensorboardEventWriter setStep(long step) {
+    this.step = step;
+    return this;
+  }
+
+  public TensorboardEventWriter incStep(long step) {
+    this.step += step;
+    return this;
   }
 }

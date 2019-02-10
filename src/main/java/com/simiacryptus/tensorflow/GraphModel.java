@@ -24,6 +24,7 @@ import com.google.common.primitives.Floats;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.tensorflow.framework.*;
 
+import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,13 +42,13 @@ public class GraphModel {
   }
 
   public Map<String, GraphNode> getNodes() {
-    return this.nodeMap.entrySet().stream().collect(Collectors.toMap(x->x.getKey(), x->getChild(x.getKey())));
+    return this.nodeMap.entrySet().stream().collect(Collectors.toMap(x -> x.getKey(), x -> getChild(x.getKey())));
   }
 
   public List<String> getRootNodes() {
     return getNodes().entrySet().stream()
-        .filter(potentialRoot->!getNodes().values().stream().filter(node->node.getInputKeys().contains(potentialRoot.getKey())).findAny().isPresent())
-        .map(x->x.getKey())
+        .filter(potentialRoot -> !getNodes().values().stream().filter(node -> node.getInputKeys().contains(potentialRoot.getKey())).findAny().isPresent())
+        .map(x -> x.getKey())
         .collect(Collectors.toList());
   }
 
@@ -64,101 +65,131 @@ public class GraphModel {
   public class GraphNode {
     public final String name;
     @JsonIgnore
-    public final NodeDef nodeDef;
-    public final String op;
+    private transient NodeDef nodeDef = null;
+    private transient String op = null;
 
     protected GraphNode(String name) {
       this.name = name;
-      this.nodeDef = nodeMap.get(this.name);
-      assert name.equals(nodeDef.getName());
-      this.op = nodeDef.getOp();
     }
 
     @Override
     public String toString() {
       return "GraphNode{" +
           "name='" + name + '\'' +
-          ", op=" + op +
+          ", op=" + getOp() +
           ", dataType=" + getDataType() +
           ", shape=" + getShape() +
           ", inputs=" + getInputs() +
           '}';
     }
 
-    public DataType getDataType() {
-      Map<String, AttrValue> attrMap = nodeDef.getAttrMap();
+    public String getDataTypeString() {
+      DataType dataType = getDataType();
+      if(dataType == DataType.UNRECOGNIZED) return null;
+      return dataType.toString();
+    }
+
+    @JsonIgnore
+    @Nonnull
+    public final DataType getDataType() {
+      Map<String, AttrValue> attrMap = getNodeDef().getAttrMap();
+      DataType type = null;
       if (attrMap.containsKey("dtype")) {
-        return attrMap.get("dtype").getType();
-      } else if (attrMap.containsKey("value")) {
-        return attrMap.get("value").getTensor().getDtype();
-      } else {
-        return null;
+        type = attrMap.get("dtype").getType();
       }
+      if (null == type && attrMap.containsKey("value")) {
+        type = attrMap.get("value").getTensor().getDtype();
+      }
+      if (null == type) {
+        type = DataType.UNRECOGNIZED;
+      }
+      return type;
     }
 
     public Object getDataSummary() {
-      return summary(getData());
+      if (getDataType() == DataType.DT_STRING) {
+        return "";
+      } else {
+        return summary(getData());
+      }
     }
 
     @JsonIgnore
     public double[] getData() {
-      if (getDataType() == DataType.DT_FLOAT) {
+      DataType dataType = getDataType();
+      if (dataType == DataType.DT_DOUBLE) {
+        return getDoubles();
+      } else if (dataType == DataType.DT_FLOAT) {
         return toDoubles(getFloats());
-      } else if (getDataType() == DataType.DT_INT32) {
+      } else if (dataType == DataType.DT_INT32) {
         return toDoubles(getInts());
-      } else if (getDataType() == null) {
+      } else if (dataType == DataType.DT_INT64) {
+        return toDoubles(getLongs());
+      } else if (dataType == null || dataType == DataType.UNRECOGNIZED) {
         return null;
       } else {
-        throw new RuntimeException("Unsupported Data Type: " + getDataType());
+        throw new RuntimeException("Unsupported Data Type: " + dataType);
       }
+    }
+
+    @JsonIgnore
+    public double[] getDoubles() {
+      TensorProto tensor = getTensor();
+      return null == tensor ? null : GraphModel.getDoubles(tensor.getTensorContent().asReadOnlyByteBuffer());
     }
 
     @JsonIgnore
     public float[] getFloats() {
       TensorProto tensor = getTensor();
-      return null==tensor?null:GraphModel.getFloats(tensor.getTensorContent().asReadOnlyByteBuffer());
+      return null == tensor ? null : GraphModel.getFloats(tensor.getTensorContent().asReadOnlyByteBuffer());
     }
 
     @JsonIgnore
     public int[] getInts() {
       TensorProto tensor = getTensor();
-      return null==tensor?null:GraphModel.getInts(tensor.getTensorContent().asReadOnlyByteBuffer());
+      return null == tensor ? null : GraphModel.getInts(tensor.getTensorContent().asReadOnlyByteBuffer());
+    }
+
+    @JsonIgnore
+    public long[] getLongs() {
+      TensorProto tensor = getTensor();
+      return null == tensor ? null : GraphModel.getLongs(tensor.getTensorContent().asReadOnlyByteBuffer());
     }
 
     @JsonIgnore
     public TensorProto getTensor() {
-      Map<String, AttrValue> attrMap = nodeDef.getAttrMap();
+      Map<String, AttrValue> attrMap = getNodeDef().getAttrMap();
       return !attrMap.containsKey("value") ? null : attrMap.get("value").getTensor();
     }
 
     public long[] getShape() {
-      Map<String, AttrValue> attrMap = nodeDef.getAttrMap();
+      Map<String, AttrValue> attrMap = getNodeDef().getAttrMap();
       TensorShapeProto shape;
       if (attrMap.containsKey("shape")) {
-
         shape = attrMap.get("shape").getShape();
       } else if (attrMap.containsKey("value")) {
         shape = attrMap.get("value").getTensor().getTensorShape();
       } else {
         return null;
       }
-      return shape.getDimList().stream().mapToLong(x->x.getSize()).toArray();
+      return shape.getDimList().stream().mapToLong(x -> x.getSize()).toArray();
     }
 
     public List<String> getInputKeys() {
-      return getInputs().stream().map(x->x.name).collect(Collectors.toList());
+      return getInputs().stream().map(x -> x.name).collect(Collectors.toList());
     }
 
     @JsonIgnore
     public List<GraphNode> getInputs() {
-      return this.nodeDef.getInputList().stream().map(x->getChild(x)).collect(Collectors.toList());
+      return this.getNodeDef().getInputList().stream().map(x -> getChild(x)).collect(Collectors.toList());
     }
 
     private volatile Integer order = null;
+
     public int getOrder() {
-      if(null == order) {
+      if (null == order) {
         synchronized (this) {
-          if(null == order) {
+          if (null == order) {
             order = getInputs().stream().mapToInt(x -> x.getOrder()).max().orElseGet(() -> -1) + 1;
           }
         }
@@ -167,17 +198,18 @@ public class GraphModel {
     }
 
     public List<String> getRootKeys() {
-      return getRootInputs().stream().map(x->x.name).collect(Collectors.toList());
+      return getRootInputs().stream().map(x -> x.name).collect(Collectors.toList());
     }
 
     private volatile List<GraphNode> rootInputs = null;
+
     @JsonIgnore
     public List<GraphNode> getRootInputs() {
-      if(null == rootInputs) {
-        synchronized(this) {
-          if(null == rootInputs) {
-            if(getInputs().isEmpty()) {
-              if(op.equals("Placeholder")) {
+      if (null == rootInputs) {
+        synchronized (this) {
+          if (null == rootInputs) {
+            if (getInputs().isEmpty()) {
+              if (getOp().equals("Placeholder")) {
                 rootInputs = Arrays.asList(this);
               } else {
                 rootInputs = Arrays.asList();
@@ -204,25 +236,64 @@ public class GraphModel {
 
       return Objects.hash(name);
     }
+
+    @JsonIgnore
+    public NodeDef getNodeDef() {
+      if(null == this.nodeDef) {
+        synchronized (this) {
+          if(null == this.nodeDef) {
+            String key = normalizeKey();
+            this.nodeDef = nodeMap.get(key);
+            if (null == this.nodeDef) {
+              throw new IllegalStateException(this.name + " not found in " + nodeMap.keySet().stream().reduce((a,b)->a+",\n\t"+b).get());
+            }
+          }
+        }
+      }
+      return nodeDef;
+    }
+
+    private String normalizeKey() {
+      String name = this.name;
+      name = name.split(":")[0];
+      while(name.startsWith("^")) name = name.substring(1);
+      return name;
+    }
+
+    public String getOp() {
+      if(null==this.op) {
+        synchronized (this) {
+          if(null==this.op) {
+            this.op = getNodeDef().getOp();
+          }
+        }
+      }
+      return op;
+    }
   }
 
   public static double[] toDoubles(float[] values) {
-    return null==values?null:Floats.asList(values).stream().mapToDouble(x -> x).toArray();
+    return null == values ? null : Floats.asList(values).stream().mapToDouble(x -> x).toArray();
   }
+
   public static double[] toDoubles(int[] values) {
-    return null==values?null:Arrays.stream(values).mapToDouble(x -> x).toArray();
+    return null == values ? null : Arrays.stream(values).mapToDouble(x -> x).toArray();
+  }
+
+  public static double[] toDoubles(long[] values) {
+    return null == values ? null : Arrays.stream(values).mapToDouble(x -> x).toArray();
   }
 
   public static HashMap<String, Double> summary(double[] values) {
-    if(null == values) return null;
+    if (null == values) return null;
     DoubleSummaryStatistics finiteStatistics = Arrays.stream(values).filter(x -> Double.isFinite(x)).summaryStatistics();
     long nanCount = Arrays.stream(values).filter(x -> Double.isNaN(x)).count();
     long infCount = Arrays.stream(values).filter(x -> Double.isInfinite(x)).count();
     HashMap<String, Double> data = new HashMap<>();
-    data.put("min",finiteStatistics.getMin());
-    data.put("max",finiteStatistics.getMax());
-    data.put("sum",finiteStatistics.getSum());
-    data.put("avg",finiteStatistics.getAverage());
+    data.put("min", finiteStatistics.getMin());
+    data.put("max", finiteStatistics.getMax());
+    data.put("sum", finiteStatistics.getSum());
+    data.put("avg", finiteStatistics.getAverage());
     data.put("finiteCount", (double) finiteStatistics.getCount());
     data.put("nanCount", (double) nanCount);
     data.put("infCount", (double) infCount);
@@ -240,12 +311,36 @@ public class GraphModel {
     byteBuffer.asIntBuffer().get(values);
     return values;
   }
+
+  private static long[] getLongs(ByteBuffer byteBuffer) {
+    long[] values = new long[byteBuffer.limit() / 8];
+    byteBuffer.asLongBuffer().get(values);
+    return values;
+  }
+  private static double[] getDoubles(ByteBuffer byteBuffer) {
+    double[] values = new double[byteBuffer.limit() / 8];
+    byte in[] = {0, 0, 0, 0, 0, 0, 0, 0};
+    for (int i = 0; i < values.length; i++) {
+      byteBuffer.get(in);
+      long value = 0;
+      for (int b = 0; b < 8; b++) {
+        value |= (in[b] & 0xFFL) << (8*b);
+      }
+      values[i] = Double.longBitsToDouble(value);
+    }
+    return values;
+  }
+
   private static float[] getFloats(ByteBuffer byteBuffer) {
     float[] values = new float[byteBuffer.limit() / 4];
     byte in[] = {0, 0, 0, 0};
     for (int i = 0; i < values.length; i++) {
       byteBuffer.get(in);
-      values[i] = Float.intBitsToFloat(in[0] | in[1] << 8 | in[2] << 16 | in[3] << 24);
+      int value = 0;
+      for (int b = 0; b < 4; b++) {
+        value |= (in[b] & 0xFF) << (8*b);
+      }
+      values[i] = Float.intBitsToFloat(value);
     }
     return values;
   }
