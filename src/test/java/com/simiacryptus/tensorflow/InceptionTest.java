@@ -19,8 +19,10 @@
 
 package com.simiacryptus.tensorflow;
 
+import com.google.protobuf.AbstractMessage;
 import com.simiacryptus.notebook.MarkdownNotebookOutput;
 import com.simiacryptus.util.test.SysOutInterceptor;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -28,6 +30,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.Test;
 import org.tensorflow.Graph;
 import org.tensorflow.Output;
+import org.tensorflow.framework.GraphDef;
 
 import javax.imageio.ImageIO;
 import java.io.*;
@@ -44,6 +47,14 @@ public class InceptionTest {
 
   static {
     SysOutInterceptor.INSTANCE.init();
+  }
+
+  @Test
+  public void testReferenceData() throws IOException {
+    System.out.println(GraphDef.parseFrom(FileUtils.readFileToByteArray(new File("H:\\SimiaCryptus\\tensorflow\\tensorflow\\examples\\tutorials\\mnist\\model\\train.pb"))));
+    TestUtil.streamEvents("H:\\SimiaCryptus\\tensorflow\\tensorflow\\examples\\tutorials\\mnist\\tmp\\test\\events.out.tfevents.1549408929.DESKTOP-L7C95P7")
+        .map(AbstractMessage::toString)
+        .forEach(System.out::println);
   }
 
   @Test

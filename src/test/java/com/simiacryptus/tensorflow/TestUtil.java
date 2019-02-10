@@ -25,10 +25,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.primitives.Floats;
 import com.simiacryptus.util.Util;
 import org.apache.commons.io.IOUtils;
-import org.tensorflow.Graph;
-import org.tensorflow.Operation;
-import org.tensorflow.Output;
-import org.tensorflow.Tensor;
+import org.tensorflow.*;
 import org.tensorflow.util.Event;
 
 import java.awt.*;
@@ -37,8 +34,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import java.util.zip.ZipFile;
 
 public class TestUtil {
@@ -94,7 +95,13 @@ public class TestUtil {
         outputStream.println(String.format("Operation %s (type %s) with %s outputs", operation.name(), operation.type(), operation.numOutputs()));
         for (int i = 0; i < operation.numOutputs(); i++) {
           Output<Object> output = operation.output(i);
-          outputStream.println(String.format("  Output %s (type %s, shape %s)", i, output.dataType().name(), output.shape().toString()));
+          DataType dataType = null;
+          try {
+            dataType = output.dataType();
+          } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+          }
+          outputStream.println(String.format("  Output %s (type %s, shape %s)", i, null==dataType?null:dataType.name(), output.shape().toString()));
         }
       }
     }
@@ -106,7 +113,7 @@ public class TestUtil {
     else return Arrays.stream(file.listFiles()).flatMap(f-> Arrays.stream(allFiles(f))).toArray(i->new File[i]);
   }
 
-  public static void launchTensorboard(String logDir, Consumer<Process> waiter) throws IOException, URISyntaxException, InterruptedException {
+  public static void launchTensorboard(String logDir, Consumer<Process> waiter) throws IOException, URISyntaxException {
     Process tensorboard = new ProcessBuilder().command(
         System.getProperty("tensorboard", System.getProperty("user.home") + "\\AppData\\Local\\Programs\\Python\\Python36\\Scripts\\tensorboard.exe"),
         "--logdir=" + logDir
@@ -127,5 +134,30 @@ public class TestUtil {
       org.tensorflow.util.Event event = Event.parseFrom(TensorboardEventWriter.read(dataInput));
       System.out.println(event);
     }
+  }
+
+  public static Stream<Event> streamEvents(String file) throws IOException {
+    InputStream inputStream = new FileInputStream(file);
+    inputStream = new BufferedInputStream(inputStream);
+    DataInputStream dataInput = new DataInputStream(inputStream);
+    return StreamSupport.stream(Spliterators.spliterator(new Iterator<org.tensorflow.util.Event>() {
+      @Override
+      public boolean hasNext() {
+        try {
+          return dataInput.available() > 0;
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+      @Override
+      public org.tensorflow.util.Event next() {
+        try {
+          return Event.parseFrom(TensorboardEventWriter.read(dataInput));
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    }, -1, Spliterator.ORDERED), false);
   }
 }
