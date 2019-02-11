@@ -30,6 +30,7 @@
 
     <artifactId>tensorflow-model</artifactId>
     <description>General Utilities for TensorFlow</description>
+    <url>https://simiacryptus.github.io/${github.project}/${github.path}</url>
 
     <properties>
         <github.project>tensorflow-model</github.project>
