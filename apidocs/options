@@ -1,0 +1,24 @@
+-classpath
+'C:/Users/andre/.m2/repository/org/tensorflow/proto/1.13.0-rc0/proto-1.13.0-rc0.jar;C:/Users/andre/.m2/repository/org/jetbrains/annotations/17.0.0/annotations-17.0.0.jar;C:/Users/andre/.m2/repository/org/tensorflow/libtensorflow_jni/1.13.0-rc0/libtensorflow_jni-1.13.0-rc0.jar;C:/Users/andre/.m2/repository/org/tensorflow/libtensorflow_jni_gpu/1.13.0-rc0/libtensorflow_jni_gpu-1.13.0-rc0.jar;C:/Users/andre/.m2/repository/com/google/guava/failureaccess/1.0.1/failureaccess-1.0.1.jar;C:/Users/andre/.m2/repository/org/codehaus/mojo/animal-sniffer-annotations/1.17/animal-sniffer-annotations-1.17.jar;C:/Users/andre/.m2/repository/org/tensorflow/libtensorflow/1.13.0-rc0/libtensorflow-1.13.0-rc0.jar;C:/Users/andre/.m2/repository/org/checkerframework/checker-qual/2.5.2/checker-qual-2.5.2.jar;C:/Users/andre/.m2/repository/com/google/errorprone/error_prone_annotations/2.2.0/error_prone_annotations-2.2.0.jar;C:/Users/andre/.m2/repository/com/google/protobuf/protobuf-java/3.5.1/protobuf-java-3.5.1.jar;C:/Users/andre/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.9.8/jackson-annotations-2.9.8.jar;C:/Users/andre/.m2/repository/org/tensorflow/tensorflow/1.13.0-rc0/tensorflow-1.13.0-rc0.jar;C:/Users/andre/.m2/repository/org/xerial/snappy/snappy-java/1.1.7.2/snappy-java-1.1.7.2.jar;C:/Users/andre/.m2/repository/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar;C:/Users/andre/.m2/repository/com/google/j2objc/j2objc-annotations/1.1/j2objc-annotations-1.1.jar;C:/Users/andre/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar;C:/Users/andre/.m2/repository/org/slf4j/slf4j-api/1.8.0-beta2/slf4j-api-1.8.0-beta2.jar;C:/Users/andre/.m2/repository/com/google/guava/guava/27.0.1-jre/guava-27.0.1-jre.jar'
+-encoding
+'UTF-8'
+-protected
+-sourcepath
+'H:/SimiaCryptus/data-science-tools/tensorflow-model/src/main/java;H:/SimiaCryptus/data-science-tools/tensorflow-model/target/generated-sources/annotations'
+-author
+-bottom
+'Copyright &#169; 2019 <a href="https://simiacryptus.com">SimiaCryptus Software</a>. All rights reserved.'
+-charset
+'UTF-8'
+-d
+'H:/SimiaCryptus/data-science-tools/tensorflow-model/target/site/apidocs'
+-docencoding
+'UTF-8'
+-doctitle
+'tensorflow-model 1.6.1 API'
+-linkoffline
+'http://docs.oracle.com/javase/8/docs/api' 'H:/SimiaCryptus/data-science-tools/tensorflow-model/target/javadoc-bundle-options'
+-use
+-version
+-windowtitle
+'tensorflow-model 1.6.1 API'
