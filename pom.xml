@@ -29,13 +29,11 @@
     </parent>
 
     <artifactId>tensorflow-model</artifactId>
-    <description>A pure Java library to read TensorFlow graphs saved via protobuf</description>
+    <description>General Utilities for TensorFlow</description>
 
     <properties>
         <github.project>tensorflow-model</github.project>
         <github.path></github.path>
-        <scala.mjversion>2.11</scala.mjversion>
-        <scala.version>2.11.11</scala.version>
     </properties>
     <distributionManagement>
         <site>
