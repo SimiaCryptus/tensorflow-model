@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class GraphModel {
   @JsonIgnore
@@ -85,7 +86,7 @@ public class GraphModel {
 
     public String getDataTypeString() {
       DataType dataType = getDataType();
-      if(dataType == DataType.UNRECOGNIZED) return null;
+      if (dataType == DataType.UNRECOGNIZED) return null;
       return dataType.toString();
     }
 
@@ -203,6 +204,36 @@ public class GraphModel {
 
     private volatile List<GraphNode> rootInputs = null;
 
+
+    public GraphDef subgraph(Set<String> inputs) {
+      GraphDef.Builder builder = GraphDef.newBuilder();
+      for (String input : inputs) {
+        builder.addNode(NodeDef.newBuilder()
+            .setName(input)
+            .setOp("Placeholder")
+            .putAttr("dtype", AttrValue.newBuilder().setType(DataType.DT_FLOAT).build())
+            .build());
+      }
+      subgraphNodes(inputs).stream().map(GraphModel.GraphNode::getNodeDef).forEach(builder::addNode);
+      return builder.build();
+    }
+
+    @JsonIgnore
+    public List<GraphNode> subgraphNodes(Set<String> inputs) {
+      List<GraphNode> subgraph;
+      if (inputs.contains(name)) {
+        subgraph = Arrays.asList();
+      } else if (getInputs().isEmpty()) {
+        subgraph = Arrays.asList(this);
+      } else {
+        subgraph = Stream.concat(
+            Stream.of(this),
+            getInputs().stream().flatMap(input -> input.subgraphNodes(inputs).stream()).distinct()
+        ).distinct().collect(Collectors.toList());
+      }
+      return subgraph;
+    }
+
     @JsonIgnore
     public List<GraphNode> getRootInputs() {
       if (null == rootInputs) {
@@ -239,13 +270,13 @@ public class GraphModel {
 
     @JsonIgnore
     public NodeDef getNodeDef() {
-      if(null == this.nodeDef) {
+      if (null == this.nodeDef) {
         synchronized (this) {
-          if(null == this.nodeDef) {
+          if (null == this.nodeDef) {
             String key = normalizeKey();
             this.nodeDef = nodeMap.get(key);
             if (null == this.nodeDef) {
-              throw new IllegalStateException(this.name + " not found in " + nodeMap.keySet().stream().reduce((a,b)->a+",\n\t"+b).get());
+              throw new IllegalStateException(this.name + " not found in " + nodeMap.keySet().stream().reduce((a, b) -> a + ",\n\t" + b).get());
             }
           }
         }
@@ -256,14 +287,14 @@ public class GraphModel {
     private String normalizeKey() {
       String name = this.name;
       name = name.split(":")[0];
-      while(name.startsWith("^")) name = name.substring(1);
+      while (name.startsWith("^")) name = name.substring(1);
       return name;
     }
 
     public String getOp() {
-      if(null==this.op) {
+      if (null == this.op) {
         synchronized (this) {
-          if(null==this.op) {
+          if (null == this.op) {
             this.op = getNodeDef().getOp();
           }
         }
@@ -317,6 +348,7 @@ public class GraphModel {
     byteBuffer.asLongBuffer().get(values);
     return values;
   }
+
   private static double[] getDoubles(ByteBuffer byteBuffer) {
     double[] values = new double[byteBuffer.limit() / 8];
     byte in[] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -324,7 +356,7 @@ public class GraphModel {
       byteBuffer.get(in);
       long value = 0;
       for (int b = 0; b < 8; b++) {
-        value |= (in[b] & 0xFFL) << (8*b);
+        value |= (in[b] & 0xFFL) << (8 * b);
       }
       values[i] = Double.longBitsToDouble(value);
     }
@@ -338,7 +370,7 @@ public class GraphModel {
       byteBuffer.get(in);
       int value = 0;
       for (int b = 0; b < 4; b++) {
-        value |= (in[b] & 0xFF) << (8*b);
+        value |= (in[b] & 0xFF) << (8 * b);
       }
       values[i] = Float.intBitsToFloat(value);
     }
