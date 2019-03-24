@@ -92,7 +92,7 @@ public class InceptionTest {
       TestUtil.dumpEvents(file.getAbsolutePath());
     }
 
-    TestUtil.launchTensorboard(logDir, tensorboard-> {
+    TestUtil.launchTensorboard(logDir, tensorboard -> {
       try {
         tensorboard.waitFor(1, TimeUnit.MINUTES);
       } catch (InterruptedException e) {

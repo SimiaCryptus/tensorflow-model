@@ -27,7 +27,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Date;
+import java.util.UUID;
 
 public class DeconstructionTest {
 
@@ -36,7 +37,7 @@ public class DeconstructionTest {
   public void inceptionTest() {
     ImageNetworkPipeline imageNetworkPipeline = ImageNetworkPipeline.inception5h();
     String now = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
-    imageNetworkPipeline.graphDefs.forEach(graphDef->{
+    imageNetworkPipeline.graphDefs.forEach(graphDef -> {
       try {
         launchTensorboard(writeGraph(graphDef, new File("target/" + now + "/tensorboard/" + UUID.randomUUID().toString()), UUID.randomUUID().toString()));
       } catch (IOException e) {
@@ -48,9 +49,9 @@ public class DeconstructionTest {
   }
 
   public void launchTensorboard(File tensorboardDir) throws IOException, URISyntaxException {
-    TestUtil.launchTensorboard(tensorboardDir.getAbsolutePath(), tensorboard-> {
+    TestUtil.launchTensorboard(tensorboardDir.getAbsolutePath(), tensorboard -> {
       try {
-        JOptionPane.showConfirmDialog(null,"OK to continue");
+        JOptionPane.showConfirmDialog(null, "OK to continue");
         tensorboard.destroyForcibly();
       } catch (Exception e) {
         throw new RuntimeException(e);

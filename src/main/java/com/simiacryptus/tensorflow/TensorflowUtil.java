@@ -34,6 +34,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class TensorflowUtil {
+  private static final SumFn doubleSum = new SumFn(Double.class);
+  private static final SumFn floatSum = new SumFn(Float.class);
+
   public static Operation find(Graph graph, String name) {
     Iterator<Operation> operations = graph.operations();
     while (operations.hasNext()) {
@@ -61,8 +64,8 @@ public class TensorflowUtil {
   public static void validate(GraphDef graphDef) {
     List<String> names = graphDef.getNodeList().stream().map(x -> x.getName()).collect(Collectors.toList());
     graphDef.getNodeList().stream().map(x -> x.getName()).distinct().forEach(names::remove);
-    if(!names.isEmpty()) {
-      throw new IllegalStateException("Duplicate names: " + names.stream().reduce((a,b)->a+", "+b).get());
+    if (!names.isEmpty()) {
+      throw new IllegalStateException("Duplicate names: " + names.stream().reduce((a, b) -> a + ", " + b).get());
     }
   }
 
@@ -153,43 +156,9 @@ public class TensorflowUtil {
     return builder.build();
   }
 
-  public static class SumFn<T extends Number> {
-    private final Graph sumGraph;
-    private final Session sumSession;
-    private final Output<T> in1;
-    private final Output<T> in2;
-    private final Output<T> out;
-
-    public SumFn(Class<T> dtype) {
-      sumGraph = new Graph();
-      Ops ops = Ops.create(sumGraph);
-      in1 = ops.placeholder(dtype).asOutput();
-      in2 = ops.placeholder(dtype).asOutput();
-      out = ops.add(
-          in1,
-          in2
-      ).asOutput();
-      sumSession = new Session(sumGraph);
-    }
-
-    @NotNull
-    public Tensor<Double> add(Tensor<T> a, Tensor<T> b) {
-      return sumSession.runner().feed(in1, a).feed(in2, b).fetch(out).run().get(0).expect(Double.class);
-    }
-
-    public void close() {
-      sumSession.close();
-      sumGraph.close();
-    }
-
-  }
-
-  private static final SumFn doubleSum = new SumFn(Double.class);
-  private static final SumFn floatSum = new SumFn(Float.class);
-
   public static <T extends Number> org.tensorflow.Tensor<T> add(Stream<org.tensorflow.Tensor<T>> stream) {
     return stream.reduce((a, b) -> {
-      if(a.dataType() == org.tensorflow.DataType.DOUBLE) {
+      if (a.dataType() == org.tensorflow.DataType.DOUBLE) {
         Tensor<T> tensor = doubleSum.add(a.expect(Double.class), b.expect(Double.class));
         a.close();
         b.close();
@@ -229,5 +198,36 @@ public class TensorflowUtil {
             .setOp("Range")
             .build()
     );
+  }
+
+  public static class SumFn<T extends Number> {
+    private final Graph sumGraph;
+    private final Session sumSession;
+    private final Output<T> in1;
+    private final Output<T> in2;
+    private final Output<T> out;
+
+    public SumFn(Class<T> dtype) {
+      sumGraph = new Graph();
+      Ops ops = Ops.create(sumGraph);
+      in1 = ops.placeholder(dtype).asOutput();
+      in2 = ops.placeholder(dtype).asOutput();
+      out = ops.add(
+          in1,
+          in2
+      ).asOutput();
+      sumSession = new Session(sumGraph);
+    }
+
+    @NotNull
+    public Tensor<Double> add(Tensor<T> a, Tensor<T> b) {
+      return sumSession.runner().feed(in1, a).feed(in2, b).fetch(out).run().get(0).expect(Double.class);
+    }
+
+    public void close() {
+      sumSession.close();
+      sumGraph.close();
+    }
+
   }
 }

@@ -36,10 +36,121 @@ public class GraphModel {
   public final GraphDef graphDef;
   @JsonIgnore
   public final Map<String, NodeDef> nodeMap;
+  private final ConcurrentHashMap<String, GraphNode> nodeCache = new ConcurrentHashMap<>();
 
   public GraphModel(byte[] bytes) {
     this.graphDef = parseGraph(bytes);
     this.nodeMap = graphDef.getNodeList().stream().collect(Collectors.toMap(x -> x.getName(), x -> x));
+  }
+
+  public static GraphDef parseGraph(byte[] bytes) {
+    final GraphDef graphDef;
+    try {
+      graphDef = GraphDef.parseFrom(bytes);
+    } catch (InvalidProtocolBufferException e) {
+      throw new RuntimeException(e);
+    }
+    return graphDef;
+  }
+
+  public static double[] toDoubles(float[] values) {
+    return null == values ? null : Floats.asList(values).stream().mapToDouble(x -> x).toArray();
+  }
+
+  public static double[] toDoubles(int[] values) {
+    return null == values ? null : Arrays.stream(values).mapToDouble(x -> x).toArray();
+  }
+
+  public static double[] toDoubles(long[] values) {
+    return null == values ? null : Arrays.stream(values).mapToDouble(x -> x).toArray();
+  }
+
+  public static HashMap<String, Double> summary(double[] values) {
+    if (null == values) return null;
+    DoubleSummaryStatistics finiteStatistics = Arrays.stream(values).filter(x -> Double.isFinite(x)).summaryStatistics();
+    long nanCount = Arrays.stream(values).filter(x -> Double.isNaN(x)).count();
+    long infCount = Arrays.stream(values).filter(x -> Double.isInfinite(x)).count();
+    HashMap<String, Double> data = new HashMap<>();
+    data.put("min", finiteStatistics.getMin());
+    data.put("max", finiteStatistics.getMax());
+    data.put("sum", finiteStatistics.getSum());
+    data.put("avg", finiteStatistics.getAverage());
+    data.put("finiteCount", (double) finiteStatistics.getCount());
+    data.put("nanCount", (double) nanCount);
+    data.put("infCount", (double) infCount);
+    return data;
+  }
+
+  public static int[] getInts(ByteBuffer byteBuffer) {
+    int[] values = new int[byteBuffer.limit() / 4];
+    byteBuffer.asIntBuffer().get(values);
+    return values;
+  }
+
+  public static long[] getLongs(ByteBuffer byteBuffer) {
+    long[] values = new long[byteBuffer.limit() / 8];
+    byteBuffer.asLongBuffer().get(values);
+    return values;
+  }
+
+  public static ByteBuffer putDoubles(double[] values) {
+    return (ByteBuffer) putDoubles(ByteBuffer.allocate(values.length * 8), values).flip();
+  }
+
+  public static ByteBuffer putDoubles(ByteBuffer byteBuffer, double[] values) {
+    byte in[] = {0, 0, 0, 0, 0, 0, 0, 0};
+    for (int i = 0; i < values.length; i++) {
+      long value = Double.doubleToLongBits(values[i]);
+      for (int b = 0; b < 8; b++) {
+        in[b] = (byte) ((value >> (8 * b)) & 0xFFL);
+      }
+      byteBuffer.put(in);
+    }
+    return byteBuffer;
+  }
+
+  public static double[] getDoubles(ByteBuffer byteBuffer) {
+    double[] values = new double[byteBuffer.limit() / 8];
+    byte in[] = {0, 0, 0, 0, 0, 0, 0, 0};
+    for (int i = 0; i < values.length; i++) {
+      byteBuffer.get(in);
+      long value = 0;
+      for (int b = 0; b < 8; b++) {
+        value |= (in[b] & 0xFFL) << (8 * b);
+      }
+      values[i] = Double.longBitsToDouble(value);
+    }
+    return values;
+  }
+
+  public static ByteBuffer putFloats(float[] values) {
+    return (ByteBuffer) putFloats(ByteBuffer.allocate(values.length * 8), values).flip();
+  }
+
+  public static ByteBuffer putFloats(ByteBuffer byteBuffer, float[] values) {
+    byte in[] = {0, 0, 0, 0};
+    for (int i = 0; i < values.length; i++) {
+      int value = Float.floatToIntBits(values[i]);
+      for (int b = 0; b < 4; b++) {
+        in[b] = (byte) ((value >> (8 * b)) & 0xFFL);
+      }
+      byteBuffer.put(in);
+    }
+    return byteBuffer;
+  }
+
+  public static float[] getFloats(ByteBuffer byteBuffer) {
+    float[] values = new float[byteBuffer.limit() / 4];
+    byte in[] = {0, 0, 0, 0};
+    for (int i = 0; i < values.length; i++) {
+      byteBuffer.get(in);
+      int value = 0;
+      for (int b = 0; b < 4; b++) {
+        value |= (in[b] & 0xFF) << (8 * b);
+      }
+      values[i] = Float.intBitsToFloat(value);
+    }
+    return values;
   }
 
   public Map<String, GraphNode> getNodes() {
@@ -53,14 +164,8 @@ public class GraphModel {
         .collect(Collectors.toList());
   }
 
-  public static GraphDef parseGraph(byte[] bytes) {
-    final GraphDef graphDef;
-    try {
-      graphDef = GraphDef.parseFrom(bytes);
-    } catch (InvalidProtocolBufferException e) {
-      throw new RuntimeException(e);
-    }
-    return graphDef;
+  public GraphNode getChild(String x) {
+    return nodeCache.computeIfAbsent(x, y -> new GraphNode(y));
   }
 
   public class GraphNode {
@@ -68,6 +173,8 @@ public class GraphModel {
     @JsonIgnore
     private transient NodeDef nodeDef = null;
     private transient String op = null;
+    private volatile Integer order = null;
+    private volatile List<GraphNode> rootInputs = null;
 
     protected GraphNode(String name) {
       this.name = name;
@@ -82,6 +189,14 @@ public class GraphModel {
           ", shape=" + getShape() +
           ", inputs=" + getInputs() +
           '}';
+    }
+
+    public Map<String, String> getProperties() {
+      Map<String, AttrValue> attrMap = getNodeDef().getAttrMap();
+      return attrMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, (stringAttrValueEntry) -> {
+        AttrValue value = stringAttrValueEntry.getValue();
+        return value.toString();
+      }));
     }
 
     public String getDataTypeString() {
@@ -185,8 +300,6 @@ public class GraphModel {
       return this.getNodeDef().getInputList().stream().map(x -> getChild(x)).collect(Collectors.toList());
     }
 
-    private volatile Integer order = null;
-
     public int getOrder() {
       if (null == order) {
         synchronized (this) {
@@ -201,9 +314,6 @@ public class GraphModel {
     public List<String> getRootKeys() {
       return getRootInputs().stream().map(x -> x.name).collect(Collectors.toList());
     }
-
-    private volatile List<GraphNode> rootInputs = null;
-
 
     public GraphDef subgraph(Set<String> inputs) {
       GraphDef.Builder builder = GraphDef.newBuilder();
@@ -301,79 +411,5 @@ public class GraphModel {
       }
       return op;
     }
-  }
-
-  public static double[] toDoubles(float[] values) {
-    return null == values ? null : Floats.asList(values).stream().mapToDouble(x -> x).toArray();
-  }
-
-  public static double[] toDoubles(int[] values) {
-    return null == values ? null : Arrays.stream(values).mapToDouble(x -> x).toArray();
-  }
-
-  public static double[] toDoubles(long[] values) {
-    return null == values ? null : Arrays.stream(values).mapToDouble(x -> x).toArray();
-  }
-
-  public static HashMap<String, Double> summary(double[] values) {
-    if (null == values) return null;
-    DoubleSummaryStatistics finiteStatistics = Arrays.stream(values).filter(x -> Double.isFinite(x)).summaryStatistics();
-    long nanCount = Arrays.stream(values).filter(x -> Double.isNaN(x)).count();
-    long infCount = Arrays.stream(values).filter(x -> Double.isInfinite(x)).count();
-    HashMap<String, Double> data = new HashMap<>();
-    data.put("min", finiteStatistics.getMin());
-    data.put("max", finiteStatistics.getMax());
-    data.put("sum", finiteStatistics.getSum());
-    data.put("avg", finiteStatistics.getAverage());
-    data.put("finiteCount", (double) finiteStatistics.getCount());
-    data.put("nanCount", (double) nanCount);
-    data.put("infCount", (double) infCount);
-    return data;
-  }
-
-  private final ConcurrentHashMap<String, GraphNode> nodeCache = new ConcurrentHashMap<>();
-
-  public GraphNode getChild(String x) {
-    return nodeCache.computeIfAbsent(x, y -> new GraphNode(y));
-  }
-
-  private static int[] getInts(ByteBuffer byteBuffer) {
-    int[] values = new int[byteBuffer.limit() / 4];
-    byteBuffer.asIntBuffer().get(values);
-    return values;
-  }
-
-  private static long[] getLongs(ByteBuffer byteBuffer) {
-    long[] values = new long[byteBuffer.limit() / 8];
-    byteBuffer.asLongBuffer().get(values);
-    return values;
-  }
-
-  private static double[] getDoubles(ByteBuffer byteBuffer) {
-    double[] values = new double[byteBuffer.limit() / 8];
-    byte in[] = {0, 0, 0, 0, 0, 0, 0, 0};
-    for (int i = 0; i < values.length; i++) {
-      byteBuffer.get(in);
-      long value = 0;
-      for (int b = 0; b < 8; b++) {
-        value |= (in[b] & 0xFFL) << (8 * b);
-      }
-      values[i] = Double.longBitsToDouble(value);
-    }
-    return values;
-  }
-
-  private static float[] getFloats(ByteBuffer byteBuffer) {
-    float[] values = new float[byteBuffer.limit() / 4];
-    byte in[] = {0, 0, 0, 0};
-    for (int i = 0; i < values.length; i++) {
-      byteBuffer.get(in);
-      int value = 0;
-      for (int b = 0; b < 4; b++) {
-        value |= (in[b] & 0xFF) << (8 * b);
-      }
-      values[i] = Float.intBitsToFloat(value);
-    }
-    return values;
   }
 }

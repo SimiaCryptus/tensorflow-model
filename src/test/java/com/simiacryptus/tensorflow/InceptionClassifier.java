@@ -49,7 +49,7 @@ public class InceptionClassifier implements AutoCloseable {
   public final List<String> labels;
   public final GraphDef graphDef;
   public final TensorboardEventWriter eventWriter;
-  public final File eventWriterLocation = new File("target/"+new SimpleDateFormat("yyyyMMddHHmm").format(new Date()) +"/tensorboard");
+  public final File eventWriterLocation = new File("target/" + new SimpleDateFormat("yyyyMMddHHmm").format(new Date()) + "/tensorboard");
   File outputLocation = new File(eventWriterLocation, "run1/events");
 
   public InceptionClassifier() {
@@ -60,14 +60,6 @@ public class InceptionClassifier implements AutoCloseable {
       eventWriter = new TensorboardEventWriter(outputLocation, graphDef);
     } catch (Throwable e) {
       throw new RuntimeException(e);
-    }
-  }
-
-  public double[] predictImgBytes(byte[] imageBytes) {
-    try (Tensor<Float> imageInput = normalizeImage(imageBytes)) {
-      try (Tensor<Float> classificationResult = inception(imageInput)) {
-        return TestUtil.getFloatValues(classificationResult);
-      }
     }
   }
 
@@ -90,8 +82,16 @@ public class InceptionClassifier implements AutoCloseable {
               ops.constant(1f)).asOutput();
       try (Session session = new Session(graph)) {
         return session.runner()
-                .fetch(normalizedImage)
-                .runAndFetchMetadata().outputs.get(0).expect(Float.class);
+            .fetch(normalizedImage)
+            .runAndFetchMetadata().outputs.get(0).expect(Float.class);
+      }
+    }
+  }
+
+  public double[] predictImgBytes(byte[] imageBytes) {
+    try (Tensor<Float> imageInput = normalizeImage(imageBytes)) {
+      try (Tensor<Float> classificationResult = inception(imageInput)) {
+        return TestUtil.getFloatValues(classificationResult);
       }
     }
   }
