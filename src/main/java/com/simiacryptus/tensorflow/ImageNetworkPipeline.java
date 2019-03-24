@@ -30,6 +30,14 @@ import java.util.zip.ZipFile;
 
 public abstract class ImageNetworkPipeline {
 
+  public final List<GraphDef> graphDefs;
+  public final GraphModel graphModel;
+
+  public ImageNetworkPipeline(GraphDef graphDef) {
+    graphModel = new GraphModel(graphDef.toByteArray());
+    this.graphDefs = Collections.unmodifiableList(getNodes(graphModel, nodeIds()));
+  }
+
   @NotNull
   public static ImageNetworkPipeline inception5h() {
     return new ImageNetworkPipeline(ImageNetworkPipeline.loadGraphZip(
@@ -39,21 +47,15 @@ public abstract class ImageNetworkPipeline {
       @Override
       public @NotNull List<String> nodeIds() {
         return Arrays.asList(
-            "conv2d0", "localresponsenorm1",
+            //"conv2d0_pre_relu/conv",
+            "conv2d0",
+            "localresponsenorm1",
             "mixed3a", "mixed3b",
             "mixed4a", "mixed4b", "mixed4c", "mixed4d", "mixed4e",
             "mixed5a", "mixed5b"
         );
       }
     };
-  }
-
-  public final List<GraphDef> graphDefs;
-  public final GraphModel graphModel;
-
-  public ImageNetworkPipeline(GraphDef graphDef) {
-    graphModel = new GraphModel(graphDef.toByteArray());
-    this.graphDefs = Collections.unmodifiableList(getNodes(graphModel, nodeIds()));
   }
 
   public static GraphDef loadGraphZip(String zipUrl, String zipPath) {

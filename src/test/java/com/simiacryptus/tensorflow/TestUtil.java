@@ -55,9 +55,9 @@ public class TestUtil {
 
   public static Operation find(Graph graph, String name) {
     Iterator<Operation> operations = graph.operations();
-    while(operations.hasNext()) {
+    while (operations.hasNext()) {
       Operation operation = operations.next();
-      if(operation.name().equals(name)) {
+      if (operation.name().equals(name)) {
         return operation;
       }
     }
@@ -101,7 +101,7 @@ public class TestUtil {
           } catch (IllegalArgumentException e) {
             e.printStackTrace();
           }
-          outputStream.println(String.format("  Output %s (type %s, shape %s)", i, null==dataType?null:dataType.name(), output.shape().toString()));
+          outputStream.println(String.format("  Output %s (type %s, shape %s)", i, null == dataType ? null : dataType.name(), output.shape().toString()));
         }
       }
     }
@@ -109,8 +109,8 @@ public class TestUtil {
   }
 
   public static File[] allFiles(File file) {
-    if(file.isFile()) return new File[]{ file };
-    else return Arrays.stream(file.listFiles()).flatMap(f-> Arrays.stream(allFiles(f))).toArray(i->new File[i]);
+    if (file.isFile()) return new File[]{file};
+    else return Arrays.stream(file.listFiles()).flatMap(f -> Arrays.stream(allFiles(f))).toArray(i -> new File[i]);
   }
 
   public static void launchTensorboard(String logDir, Consumer<Process> waiter) throws IOException, URISyntaxException {
@@ -122,7 +122,7 @@ public class TestUtil {
     try {
       waiter.accept(tensorboard);
     } finally {
-      if(tensorboard.isAlive()) tensorboard.destroyForcibly();
+      if (tensorboard.isAlive()) tensorboard.destroyForcibly();
     }
   }
 

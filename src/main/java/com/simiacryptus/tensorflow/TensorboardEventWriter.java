@@ -42,6 +42,9 @@ import java.net.InetAddress;
  * https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/core/lib/hash/crc32c.cc
  */
 public class TensorboardEventWriter implements AutoCloseable {
+  private static final long kMaskDelta = 0xa282ead8L;
+  private static final long intMask = 0xFFFFFFFFL;
+  private static volatile String hostName = null;
   public final File location;
   private volatile FileOutputStream fileOutputStream = null;
   private long step = 0;
@@ -69,7 +72,7 @@ public class TensorboardEventWriter implements AutoCloseable {
     long length = getInt(header, 0, 8);
     long masked_crc = getInt(header, 8, 4);
     long len_hash_calc = longHash(header, 0, 8);
-    if(unmask(masked_crc) != len_hash_calc) throw new RuntimeException(String.format("%s != %s",
+    if (unmask(masked_crc) != len_hash_calc) throw new RuntimeException(String.format("%s != %s",
         Long.toHexString(unmask(masked_crc)),
         Long.toHexString(len_hash_calc)));
     if (0 >= length) throw new RuntimeException("length=" + length);
@@ -77,20 +80,18 @@ public class TensorboardEventWriter implements AutoCloseable {
     dataInput.readFully(data);
     byte[] footer = new byte[4];
     dataInput.readFully(footer);
-    if(unmask(getInt(footer, 0, 4)) != longHash(data, 0, data.length)) throw new RuntimeException(String.format("%s != %s",
+    if (unmask(getInt(footer, 0, 4)) != longHash(data, 0, data.length)) throw new RuntimeException(String.format("%s != %s",
         Long.toHexString(unmask(getInt(footer, 0, 4))),
         Long.toHexString(longHash(data, 0, data.length))));
     return data;
   }
-  private static final long kMaskDelta = 0xa282ead8L;
-  private static final long intMask =    0xFFFFFFFFL;
 
   public static long longHash(byte[] bytes, int start, int length) {
-    return getInt(Hashing.crc32c().newHasher().putBytes(bytes, start, length).hash().asBytes(), 0,4);
+    return getInt(Hashing.crc32c().newHasher().putBytes(bytes, start, length).hash().asBytes(), 0, 4);
   }
 
   public static long unmask(long masked_crc) {
-    long rot = (masked_crc > kMaskDelta)?(masked_crc - kMaskDelta):(masked_crc + ((intMask+1) - kMaskDelta));
+    long rot = (masked_crc > kMaskDelta) ? (masked_crc - kMaskDelta) : (masked_crc + ((intMask + 1) - kMaskDelta));
     return (((rot >>> 17) | (rot << 15)) & intMask) & intMask;
   }
 
@@ -108,9 +109,26 @@ public class TensorboardEventWriter implements AutoCloseable {
   public static long getInt(byte[] bytes, int start, int length) {
     long value = 0;
     for (int offset = 0; offset < length; offset++) {
-      value += (bytes[start +offset]&0xFFL) << (offset * 8);
+      value += (bytes[start + offset] & 0xFFL) << (offset * 8);
     }
     return value;
+  }
+
+  public static String getHostName() {
+    if (null == hostName) {
+      synchronized (TensorboardEventWriter.class) {
+        if (null == hostName) {
+          try {
+            hostName = InetAddress.getLocalHost().getHostName();
+            if (null == hostName) hostName = InetAddress.getLocalHost().getHostAddress();
+            if (null == hostName) hostName = "local";
+          } catch (Throwable e) {
+            throw new RuntimeException(e);
+          }
+        }
+      }
+    }
+    return hostName;
   }
 
   public void writeSummary(byte[] summaryBytes) {
@@ -174,15 +192,15 @@ public class TensorboardEventWriter implements AutoCloseable {
   }
 
   public OutputStream getOutput() throws IOException {
-    if (null==fileOutputStream) {
+    if (null == fileOutputStream) {
       synchronized (this) {
-        if (null==fileOutputStream) {
-          String[] split = location.getName().split("\\.",2);
+        if (null == fileOutputStream) {
+          String[] split = location.getName().split("\\.", 2);
           fileOutputStream = new FileOutputStream(new File(location.getParentFile(), String.format("%s.out.tfevents.%d.%s",
               split[0],
               System.currentTimeMillis() / 1000,
               getHostName(),
-              split.length==2?split[1]:""
+              split.length == 2 ? split[1] : ""
           )));
           write(fileOutputStream, Event.newBuilder()
               .setWallTime(System.currentTimeMillis() / 1000)
@@ -201,24 +219,6 @@ public class TensorboardEventWriter implements AutoCloseable {
       fileOutputStream.close();
       fileOutputStream = null;
     }
-  }
-
-  private static volatile String hostName = null;
-  public static String getHostName() {
-    if(null==hostName) {
-      synchronized (TensorboardEventWriter.class) {
-        if(null==hostName) {
-          try {
-            hostName = InetAddress.getLocalHost().getHostName();
-            if(null == hostName) hostName = InetAddress.getLocalHost().getHostAddress();
-            if(null == hostName) hostName = "local";
-          } catch (Throwable e) {
-            throw new RuntimeException(e);
-          }
-        }
-      }
-    }
-    return hostName;
   }
 
   public long getStep() {

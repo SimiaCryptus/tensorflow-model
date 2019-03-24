@@ -194,7 +194,7 @@ public class NodeInstrumentation {
 
   public NodeInstrumentation setImage(int... image) {
     assert image.length == 3 : image.length;
-    assert Arrays.asList(1,3,4).contains(image[2]) : image[2];
+    assert Arrays.asList(1, 3, 4).contains(image[2]) : image[2];
     this.image = image;
     return this;
   }
