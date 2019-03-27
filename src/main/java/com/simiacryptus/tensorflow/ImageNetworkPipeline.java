@@ -47,12 +47,17 @@ public abstract class ImageNetworkPipeline {
       @Override
       public @NotNull List<String> nodeIds() {
         return Arrays.asList(
-            //"conv2d0_pre_relu/conv",
             "conv2d0",
             "localresponsenorm1",
-            "mixed3a", "mixed3b",
-            "mixed4a", "mixed4b", "mixed4c", "mixed4d", "mixed4e",
-            "mixed5a", "mixed5b"
+            "mixed3a",
+            "mixed3b",
+            "mixed4a",
+            "mixed4b",
+            "mixed4c",
+            "mixed4d",
+            "mixed4e",
+            "mixed5a",
+            "mixed5b"
         );
       }
     };
