@@ -19,7 +19,7 @@
 
 <configuration debug="true">
 
-    <property name="RUN_TYPE" maxValue="test"/>
+    <property name="RUN_TYPE" max="test"/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
