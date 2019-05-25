@@ -91,7 +91,7 @@ public class InceptionClassifier implements AutoCloseable {
   public double[] predictImgBytes(byte[] imageBytes) {
     try (Tensor<Float> imageInput = normalizeImage(imageBytes)) {
       try (Tensor<Float> classificationResult = inception(imageInput)) {
-        return TestUtil.getFloatValues(classificationResult);
+        return TFUtil.getFloatValues(classificationResult);
       }
     }
   }

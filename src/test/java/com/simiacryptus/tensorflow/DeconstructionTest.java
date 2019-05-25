@@ -49,7 +49,7 @@ public class DeconstructionTest {
   }
 
   public void launchTensorboard(File tensorboardDir) throws IOException, URISyntaxException {
-    TestUtil.launchTensorboard(tensorboardDir.getAbsolutePath(), tensorboard -> {
+    TFUtil.launchTensorboard(tensorboardDir.getAbsolutePath(), tensorboard -> {
       try {
         JOptionPane.showConfirmDialog(null, "OK to continue");
         tensorboard.destroyForcibly();
