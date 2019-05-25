@@ -42,8 +42,8 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import java.util.zip.ZipFile;
 
-public class TestUtil {
-  protected static byte[] editGraph(byte[] protobufBinaryData, Consumer<Graph> operator) {
+public class TFUtil {
+  public static byte[] editGraph(byte[] protobufBinaryData, Consumer<Graph> operator) {
     byte[] newGraphDef;
     try (Graph graph = new Graph()) {
       graph.importGraphDef(protobufBinaryData);

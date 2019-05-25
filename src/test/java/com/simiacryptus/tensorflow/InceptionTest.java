@@ -45,7 +45,7 @@ import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-import static com.simiacryptus.tensorflow.TestUtil.find;
+import static com.simiacryptus.tensorflow.TFUtil.find;
 
 public class InceptionTest {
 
@@ -57,7 +57,7 @@ public class InceptionTest {
   @Category(TestCategories.ResearchCode.class)
   public void testReferenceData() throws IOException {
     System.out.println(GraphDef.parseFrom(FileUtils.readFileToByteArray(new File("H:\\SimiaCryptus\\tensorflow\\tensorflow\\examples\\tutorials\\mnist\\model\\train.pb"))));
-    TestUtil.streamEvents("H:\\SimiaCryptus\\tensorflow\\tensorflow\\examples\\tutorials\\mnist\\tmp\\test\\events.out.tfevents.1549408929.DESKTOP-L7C95P7")
+    TFUtil.streamEvents("H:\\SimiaCryptus\\tensorflow\\tensorflow\\examples\\tutorials\\mnist\\tmp\\test\\events.out.tfevents.1549408929.DESKTOP-L7C95P7")
         .map(AbstractMessage::toString)
         .forEach(System.out::println);
   }
@@ -88,11 +88,11 @@ public class InceptionTest {
       classifier.close();
     }
 
-    for (File file : TestUtil.allFiles(new File(logDir))) {
-      TestUtil.dumpEvents(file.getAbsolutePath());
+    for (File file : TFUtil.allFiles(new File(logDir))) {
+      TFUtil.dumpEvents(file.getAbsolutePath());
     }
 
-    TestUtil.launchTensorboard(logDir, tensorboard -> {
+    TFUtil.launchTensorboard(logDir, tensorboard -> {
       try {
         tensorboard.waitFor(1, TimeUnit.MINUTES);
       } catch (InterruptedException e) {
@@ -105,17 +105,17 @@ public class InceptionTest {
   public void dumpModelJson() throws Exception {
     byte[] protobufBinaryData = loadGraphDef();
     GraphModel model = new GraphModel(protobufBinaryData);
-    System.out.println("Model: " + TestUtil.toJson(model));
+    System.out.println("Model: " + TFUtil.toJson(model));
     try (Graph graph = new Graph()) {
       graph.importGraphDef(model.graphDef.toByteArray());
-      System.out.println(TestUtil.describeGraph(graph));
+      System.out.println(TFUtil.describeGraph(graph));
     }
   }
 
   @Test
   public void testGradient() throws Exception {
     byte[] originalGraphDef = loadGraphDef();
-    byte[] newGraphDef = TestUtil.editGraph(originalGraphDef, graph -> {
+    byte[] newGraphDef = TFUtil.editGraph(originalGraphDef, graph -> {
       graph.addGradients("gradient_", new Output[]{
           find(graph, "mixed4b_1x1_pre_relu/conv").output(0)
       }, new Output[]{
@@ -124,14 +124,14 @@ public class InceptionTest {
       }, null);
     });
     GraphModel model = new GraphModel(newGraphDef);
-    System.out.println("Model: " + TestUtil.toJson(model));
+    System.out.println("Model: " + TFUtil.toJson(model));
   }
 
   @Test
   public void testFullGradient() throws Exception {
     try {
       byte[] originalGraphDef = loadGraphDef();
-      byte[] newGraphDef = TestUtil.editGraph(originalGraphDef, graph -> {
+      byte[] newGraphDef = TFUtil.editGraph(originalGraphDef, graph -> {
         graph.addGradients("gradient", new Output[]{
             find(graph, "output").output(0)
         }, new Output[]{
@@ -139,14 +139,14 @@ public class InceptionTest {
         }, null);
       });
       GraphModel model = new GraphModel(newGraphDef);
-      System.out.println("Model: " + TestUtil.toJson(model));
+      System.out.println("Model: " + TFUtil.toJson(model));
     } catch (org.tensorflow.TensorFlowException e) {
       e.printStackTrace(System.err);
     }
   }
 
   protected byte[] loadGraphDef() throws Exception {
-    return TestUtil.loadZipUrl(
+    return TFUtil.loadZipUrl(
         "https://storage.googleapis.com/download.tensorflow.org/models/inception5h.zip",
         "tensorflow_inception_graph.pb"
     );
