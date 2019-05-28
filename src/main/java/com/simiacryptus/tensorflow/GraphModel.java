@@ -172,18 +172,6 @@ public class GraphModel {
     return values;
   }
 
-  public static class DeltaRecord {
-    public final String name;
-    public final GraphNode left;
-    public final GraphNode right;
-
-    public DeltaRecord(String name, GraphNode left, GraphNode right) {
-      this.name = name;
-      this.left = left;
-      this.right = right;
-    }
-  }
-
   public Map<String, DeltaRecord> compare(GraphModel other) {
     final Map<String, GraphNode> myNodes = getNodes();
     final Map<String, GraphNode> yourNodes = other.getNodes();
@@ -194,7 +182,7 @@ public class GraphModel {
       final GraphNode l = myNodes.get(name);
       final GraphNode r = yourNodes.get(name);
       boolean equals = true;
-      if(null == l || null == r) return Stream.of(new DeltaRecord(name, l, r));
+      if (null == l || null == r) return Stream.of(new DeltaRecord(name, l, r));
       equals &= l.getProperties().equals(r.getProperties());
       equals &= Arrays.equals(l.getShape(), r.getShape());
       equals &= Arrays.equals(l.getData(), r.getData());
@@ -219,6 +207,18 @@ public class GraphModel {
 
   public GraphNode getChild(String x) {
     return nodeCache.computeIfAbsent(x, y -> new GraphNode(y));
+  }
+
+  public static class DeltaRecord {
+    public final String name;
+    public final GraphNode left;
+    public final GraphNode right;
+
+    public DeltaRecord(String name, GraphNode left, GraphNode right) {
+      this.name = name;
+      this.left = left;
+      this.right = right;
+    }
   }
 
   public class GraphNode {
@@ -248,7 +248,7 @@ public class GraphModel {
       Map<String, AttrValue> attrMap = getNodeDef().getAttrMap();
       return attrMap.entrySet().stream()
           .collect(Collectors.toMap(Map.Entry::getKey, (stringAttrValueEntry) -> {
-            if(stringAttrValueEntry.getKey().equals("value")) {
+            if (stringAttrValueEntry.getKey().equals("value")) {
               AttrValue value = stringAttrValueEntry.getValue();
               final String s = value.toBuilder().build().toString();
               return s.substring(0, Math.min(s.length(), 1024));
@@ -256,7 +256,7 @@ public class GraphModel {
               AttrValue value = stringAttrValueEntry.getValue();
               return value.toString();
             }
-      }));
+          }));
     }
 
     public String getDataTypeString() {
@@ -361,7 +361,7 @@ public class GraphModel {
     @JsonIgnore
     public List<GraphNode> getInputs() {
       final NodeDef nodeDef = this.getNodeDef();
-      if(null==nodeDef) return Collections.emptyList();
+      if (null == nodeDef) return Collections.emptyList();
       return nodeDef.getInputList().stream().map(x -> getChild(x)).collect(Collectors.toList());
     }
 
@@ -471,7 +471,7 @@ public class GraphModel {
         synchronized (this) {
           if (null == this.op) {
             final NodeDef nodeDef = getNodeDef();
-            if(null == nodeDef) return "null";
+            if (null == nodeDef) return "null";
             this.op = nodeDef.getOp();
           }
         }
