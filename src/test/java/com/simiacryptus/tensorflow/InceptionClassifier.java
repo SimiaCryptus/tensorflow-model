@@ -41,9 +41,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.zip.ZipFile;
 
-/**
- * Sample use of the TensorFlow Java API to label images using a pre-trained model.
- */
 public class InceptionClassifier implements AutoCloseable {
 
   public final List<String> labels;
