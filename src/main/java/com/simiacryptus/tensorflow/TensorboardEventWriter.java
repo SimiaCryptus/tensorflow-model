@@ -32,15 +32,6 @@ import org.tensorflow.util.TaggedRunMetadata;
 import java.io.*;
 import java.net.InetAddress;
 
-/***
- * See also:
- * https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/python/summary/writer/writer.py
- * https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/python/summary/writer/event_file_writer.py
- * https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/core/util/events_writer.cc
- * https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/core/lib/io/record_writer.h
- * https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/core/lib/io/record_writer.cc
- * https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/core/lib/hash/crc32c.cc
- */
 public class TensorboardEventWriter implements AutoCloseable {
   private static final long kMaskDelta = 0xa282ead8L;
   private static final long intMask = 0xFFFFFFFFL;
