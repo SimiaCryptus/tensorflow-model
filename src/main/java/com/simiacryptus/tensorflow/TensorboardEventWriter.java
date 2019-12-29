@@ -46,6 +46,54 @@ public class TensorboardEventWriter implements AutoCloseable {
     write(graphDef);
   }
 
+  public static String getHostName() {
+    if (null == hostName) {
+      synchronized (TensorboardEventWriter.class) {
+        if (null == hostName) {
+          try {
+            hostName = InetAddress.getLocalHost().getHostName();
+            if (null == hostName) hostName = InetAddress.getLocalHost().getHostAddress();
+            if (null == hostName) hostName = "local";
+          } catch (Throwable e) {
+            throw new RuntimeException(e);
+          }
+        }
+      }
+    }
+    return hostName;
+  }
+
+  public OutputStream getOutput() throws IOException {
+    if (null == fileOutputStream) {
+      synchronized (this) {
+        if (null == fileOutputStream) {
+          String[] split = location.getName().split("\\.", 2);
+          fileOutputStream = new FileOutputStream(new File(location.getParentFile(), String.format("%s.out.tfevents.%d.%s",
+              split[0],
+              System.currentTimeMillis() / 1000,
+              getHostName(),
+              split.length == 2 ? split[1] : ""
+          )));
+          write(fileOutputStream, Event.newBuilder()
+              .setWallTime(System.currentTimeMillis() / 1000)
+              .setFileVersion("brain.Event.2")
+              .build()
+              .toByteArray());
+        }
+      }
+    }
+    return fileOutputStream;
+  }
+
+  public long getStep() {
+    return step;
+  }
+
+  public TensorboardEventWriter setStep(long step) {
+    this.step = step;
+    return this;
+  }
+
   public static void write(OutputStream dataInput, byte[] data) throws IOException {
     byte[] header = new byte[12];
     setInt(header, 0, 8, data.length);
@@ -90,13 +138,6 @@ public class TensorboardEventWriter implements AutoCloseable {
     return ((((crc >>> 15) | (crc << 17)) & intMask) + kMaskDelta) & intMask;
   }
 
-  private static long setInt(byte[] bytes, int start, int length, long value) {
-    for (int offset = 0; offset < length; offset++) {
-      bytes[start + offset] = (byte) ((value >> (offset * 8)) & 0xFF);
-    }
-    return value;
-  }
-
   public static long getInt(byte[] bytes, int start, int length) {
     long value = 0;
     for (int offset = 0; offset < length; offset++) {
@@ -105,21 +146,11 @@ public class TensorboardEventWriter implements AutoCloseable {
     return value;
   }
 
-  public static String getHostName() {
-    if (null == hostName) {
-      synchronized (TensorboardEventWriter.class) {
-        if (null == hostName) {
-          try {
-            hostName = InetAddress.getLocalHost().getHostName();
-            if (null == hostName) hostName = InetAddress.getLocalHost().getHostAddress();
-            if (null == hostName) hostName = "local";
-          } catch (Throwable e) {
-            throw new RuntimeException(e);
-          }
-        }
-      }
+  private static long setInt(byte[] bytes, int start, int length, long value) {
+    for (int offset = 0; offset < length; offset++) {
+      bytes[start + offset] = (byte) ((value >> (offset * 8)) & 0xFF);
     }
-    return hostName;
+    return value;
   }
 
   public void writeSummary(byte[] summaryBytes) {
@@ -182,43 +213,12 @@ public class TensorboardEventWriter implements AutoCloseable {
     output.flush();
   }
 
-  public OutputStream getOutput() throws IOException {
-    if (null == fileOutputStream) {
-      synchronized (this) {
-        if (null == fileOutputStream) {
-          String[] split = location.getName().split("\\.", 2);
-          fileOutputStream = new FileOutputStream(new File(location.getParentFile(), String.format("%s.out.tfevents.%d.%s",
-              split[0],
-              System.currentTimeMillis() / 1000,
-              getHostName(),
-              split.length == 2 ? split[1] : ""
-          )));
-          write(fileOutputStream, Event.newBuilder()
-              .setWallTime(System.currentTimeMillis() / 1000)
-              .setFileVersion("brain.Event.2")
-              .build()
-              .toByteArray());
-        }
-      }
-    }
-    return fileOutputStream;
-  }
-
   @Override
   public void close() throws IOException {
     synchronized (this) {
       fileOutputStream.close();
       fileOutputStream = null;
     }
-  }
-
-  public long getStep() {
-    return step;
-  }
-
-  public TensorboardEventWriter setStep(long step) {
-    this.step = step;
-    return this;
   }
 
   public TensorboardEventWriter incStep(long step) {

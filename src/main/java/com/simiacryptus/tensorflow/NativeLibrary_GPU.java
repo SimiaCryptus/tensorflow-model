@@ -32,6 +32,17 @@ public final class NativeLibrary_GPU {
   private NativeLibrary_GPU() {
   }
 
+  private static boolean isLoaded() {
+    return false;
+//    try {
+//      TensorFlow.version();
+//      log("isLoaded: true");
+//      return true;
+//    } catch (UnsatisfiedLinkError e) {
+//      return false;
+//    }
+  }
+
   public static void load() {
     if (isLoaded() || tryLoadLibrary()) {
       // Either:
@@ -102,17 +113,6 @@ public final class NativeLibrary_GPU {
       log("tryLoadLibraryFailed: " + e.getMessage());
       return false;
     }
-  }
-
-  private static boolean isLoaded() {
-    return false;
-//    try {
-//      TensorFlow.version();
-//      log("isLoaded: true");
-//      return true;
-//    } catch (UnsatisfiedLinkError e) {
-//      return false;
-//    }
   }
 
   private static String maybeAdjustForMacOS(String libFilename) {

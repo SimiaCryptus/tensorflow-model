@@ -93,6 +93,11 @@ public class InceptionClassifier implements AutoCloseable {
     }
   }
 
+  @Override
+  public void close() throws IOException {
+    eventWriter.close();
+  }
+
   private Tensor<Float> inception(Tensor<Float> image) {
     try (Graph graph = new Graph()) {
       graph.importGraphDef(graphDef.toByteArray());
@@ -121,12 +126,6 @@ public class InceptionClassifier implements AutoCloseable {
         return result.outputs.get(0).expect(Float.class);
       }
     }
-  }
-
-
-  @Override
-  public void close() throws IOException {
-    eventWriter.close();
   }
 }
 

@@ -43,6 +43,17 @@ public class GraphModel {
     this.nodeMap = graphDef.getNodeList().stream().collect(Collectors.toMap(x -> x.getName(), x -> x));
   }
 
+  public Map<String, GraphNode> getNodes() {
+    return this.nodeMap.entrySet().stream().collect(Collectors.toMap(x -> x.getKey(), x -> getChild(x.getKey())));
+  }
+
+  public List<String> getRootNodes() {
+    return getNodes().entrySet().stream()
+        .filter(potentialRoot -> !getNodes().values().stream().filter(node -> node.getInputKeys().contains(potentialRoot.getKey())).findAny().isPresent())
+        .map(x -> x.getKey())
+        .collect(Collectors.toList());
+  }
+
   public static GraphDef parseGraph(byte[] bytes) {
     final GraphDef graphDef;
     try {
@@ -194,17 +205,6 @@ public class GraphModel {
     }).collect(Collectors.toMap(x -> x.name, x -> x));
   }
 
-  public Map<String, GraphNode> getNodes() {
-    return this.nodeMap.entrySet().stream().collect(Collectors.toMap(x -> x.getKey(), x -> getChild(x.getKey())));
-  }
-
-  public List<String> getRootNodes() {
-    return getNodes().entrySet().stream()
-        .filter(potentialRoot -> !getNodes().values().stream().filter(node -> node.getInputKeys().contains(potentialRoot.getKey())).findAny().isPresent())
-        .map(x -> x.getKey())
-        .collect(Collectors.toList());
-  }
-
   public GraphNode getChild(String x) {
     return nodeCache.computeIfAbsent(x, y -> new GraphNode(y));
   }
@@ -233,36 +233,33 @@ public class GraphModel {
       this.name = name;
     }
 
-    @Override
-    public String toString() {
-      return "GraphNode{" +
-          "name='" + name + '\'' +
-          ", op=" + getOp() +
-          ", dataType=" + getDataType() +
-          ", shape=" + getShape() +
-          ", inputs=" + getInputs() +
-          '}';
-    }
-
-    public Map<String, String> getProperties() {
-      Map<String, AttrValue> attrMap = getNodeDef().getAttrMap();
-      return attrMap.entrySet().stream()
-          .collect(Collectors.toMap(Map.Entry::getKey, (stringAttrValueEntry) -> {
-            if (stringAttrValueEntry.getKey().equals("value")) {
-              AttrValue value = stringAttrValueEntry.getValue();
-              final String s = value.toBuilder().build().toString();
-              return s.substring(0, Math.min(s.length(), 1024));
-            } else {
-              AttrValue value = stringAttrValueEntry.getValue();
-              return value.toString();
-            }
-          }));
-    }
-
-    public String getDataTypeString() {
+    @JsonIgnore
+    public double[] getData() {
       DataType dataType = getDataType();
-      if (dataType == DataType.UNRECOGNIZED) return null;
-      return dataType.toString();
+      if (dataType == DataType.DT_DOUBLE) {
+        return getDoubles();
+      } else if (dataType == DataType.DT_FLOAT) {
+        return toDoubles(getFloats());
+      } else if (dataType == DataType.DT_INT32) {
+        return toDoubles(getInts());
+      } else if (dataType == DataType.DT_INT64) {
+        return toDoubles(getLongs());
+      } else if (dataType == null || dataType == DataType.UNRECOGNIZED) {
+        return null;
+      } else {
+        throw new RuntimeException("Unsupported Data Type: " + dataType);
+      }
+    }
+
+    public Object getDataSummary() {
+      if (getDataType() == DataType.DT_STRING) {
+        return "";
+      } else {
+        double[] data = getData();
+        if (null == data || 0 == data.length) return "";
+        if (32 > data.length) return data;
+        return summary(data);
+      }
     }
 
     @JsonIgnore
@@ -282,33 +279,10 @@ public class GraphModel {
       return type;
     }
 
-    public Object getDataSummary() {
-      if (getDataType() == DataType.DT_STRING) {
-        return "";
-      } else {
-        double[] data = getData();
-        if (null == data || 0 == data.length) return "";
-        if (32 > data.length) return data;
-        return summary(data);
-      }
-    }
-
-    @JsonIgnore
-    public double[] getData() {
+    public String getDataTypeString() {
       DataType dataType = getDataType();
-      if (dataType == DataType.DT_DOUBLE) {
-        return getDoubles();
-      } else if (dataType == DataType.DT_FLOAT) {
-        return toDoubles(getFloats());
-      } else if (dataType == DataType.DT_INT32) {
-        return toDoubles(getInts());
-      } else if (dataType == DataType.DT_INT64) {
-        return toDoubles(getLongs());
-      } else if (dataType == null || dataType == DataType.UNRECOGNIZED) {
-        return null;
-      } else {
-        throw new RuntimeException("Unsupported Data Type: " + dataType);
-      }
+      if (dataType == DataType.UNRECOGNIZED) return null;
+      return dataType.toString();
     }
 
     @JsonIgnore
@@ -321,6 +295,17 @@ public class GraphModel {
     public float[] getFloats() {
       TensorProto tensor = getTensor();
       return null == tensor ? null : GraphModel.getFloats(tensor.getTensorContent().asReadOnlyByteBuffer());
+    }
+
+    public List<String> getInputKeys() {
+      return getInputs().stream().map(x -> x.name).collect(Collectors.toList());
+    }
+
+    @JsonIgnore
+    public List<GraphNode> getInputs() {
+      final NodeDef nodeDef = this.getNodeDef();
+      if (null == nodeDef) return Collections.emptyList();
+      return nodeDef.getInputList().stream().map(x -> getChild(x)).collect(Collectors.toList());
     }
 
     @JsonIgnore
@@ -336,9 +321,82 @@ public class GraphModel {
     }
 
     @JsonIgnore
-    public TensorProto getTensor() {
+    public NodeDef getNodeDef() {
+      if (null == this.nodeDef) {
+        synchronized (this) {
+          if (null == this.nodeDef) {
+            String key = normalizeKey();
+            this.nodeDef = nodeMap.get(key);
+            if (null == this.nodeDef) {
+              return null;
+            }
+          }
+        }
+      }
+      return nodeDef;
+    }
+
+    public String getOp() {
+      if (null == this.op) {
+        synchronized (this) {
+          if (null == this.op) {
+            final NodeDef nodeDef = getNodeDef();
+            if (null == nodeDef) return "null";
+            this.op = nodeDef.getOp();
+          }
+        }
+      }
+      return op;
+    }
+
+    public int getOrder() {
+      if (null == order) {
+        synchronized (this) {
+          if (null == order) {
+            order = getInputs().stream().mapToInt(x -> x.getOrder()).max().orElseGet(() -> -1) + 1;
+          }
+        }
+      }
+      return order;
+    }
+
+    public Map<String, String> getProperties() {
       Map<String, AttrValue> attrMap = getNodeDef().getAttrMap();
-      return !attrMap.containsKey("value") ? null : attrMap.get("value").getTensor();
+      return attrMap.entrySet().stream()
+          .collect(Collectors.toMap(Map.Entry::getKey, (stringAttrValueEntry) -> {
+            if (stringAttrValueEntry.getKey().equals("value")) {
+              AttrValue value = stringAttrValueEntry.getValue();
+              final String s = value.toBuilder().build().toString();
+              return s.substring(0, Math.min(s.length(), 1024));
+            } else {
+              AttrValue value = stringAttrValueEntry.getValue();
+              return value.toString();
+            }
+          }));
+    }
+
+    @JsonIgnore
+    public List<GraphNode> getRootInputs() {
+      if (null == rootInputs) {
+        synchronized (this) {
+          if (null == rootInputs) {
+            if (getInputs().isEmpty()) {
+              if (getOp().equals("Placeholder")) {
+                rootInputs = Arrays.asList(this);
+              } else {
+                rootInputs = Arrays.asList();
+              }
+            } else {
+              rootInputs = getInputs().stream().flatMap(input -> input.getRootInputs().stream()).distinct().collect(Collectors.toList());
+            }
+          }
+        }
+      }
+      return rootInputs;
+    }
+
+    public List<String> getRootKeys() {
+      return getRootInputs().stream().map(x -> x.name).collect(Collectors.toList());
     }
 
     public long[] getShape() {
@@ -354,30 +412,21 @@ public class GraphModel {
       return shape.getDimList().stream().mapToLong(x -> x.getSize()).toArray();
     }
 
-    public List<String> getInputKeys() {
-      return getInputs().stream().map(x -> x.name).collect(Collectors.toList());
-    }
-
     @JsonIgnore
-    public List<GraphNode> getInputs() {
-      final NodeDef nodeDef = this.getNodeDef();
-      if (null == nodeDef) return Collections.emptyList();
-      return nodeDef.getInputList().stream().map(x -> getChild(x)).collect(Collectors.toList());
+    public TensorProto getTensor() {
+      Map<String, AttrValue> attrMap = getNodeDef().getAttrMap();
+      return !attrMap.containsKey("value") ? null : attrMap.get("value").getTensor();
     }
 
-    public int getOrder() {
-      if (null == order) {
-        synchronized (this) {
-          if (null == order) {
-            order = getInputs().stream().mapToInt(x -> x.getOrder()).max().orElseGet(() -> -1) + 1;
-          }
-        }
-      }
-      return order;
-    }
-
-    public List<String> getRootKeys() {
-      return getRootInputs().stream().map(x -> x.name).collect(Collectors.toList());
+    @Override
+    public String toString() {
+      return "GraphNode{" +
+          "name='" + name + '\'' +
+          ", op=" + getOp() +
+          ", dataType=" + getDataType() +
+          ", shape=" + getShape() +
+          ", inputs=" + getInputs() +
+          '}';
     }
 
     public GraphDef subgraph(Set<String> inputs) {
@@ -409,26 +458,6 @@ public class GraphModel {
       return subgraph;
     }
 
-    @JsonIgnore
-    public List<GraphNode> getRootInputs() {
-      if (null == rootInputs) {
-        synchronized (this) {
-          if (null == rootInputs) {
-            if (getInputs().isEmpty()) {
-              if (getOp().equals("Placeholder")) {
-                rootInputs = Arrays.asList(this);
-              } else {
-                rootInputs = Arrays.asList();
-              }
-            } else {
-              rootInputs = getInputs().stream().flatMap(input -> input.getRootInputs().stream()).distinct().collect(Collectors.toList());
-            }
-          }
-        }
-      }
-      return rootInputs;
-    }
-
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
@@ -443,40 +472,11 @@ public class GraphModel {
       return Objects.hash(name);
     }
 
-    @JsonIgnore
-    public NodeDef getNodeDef() {
-      if (null == this.nodeDef) {
-        synchronized (this) {
-          if (null == this.nodeDef) {
-            String key = normalizeKey();
-            this.nodeDef = nodeMap.get(key);
-            if (null == this.nodeDef) {
-              return null;
-            }
-          }
-        }
-      }
-      return nodeDef;
-    }
-
     private String normalizeKey() {
       String name = this.name;
       name = name.split(":")[0];
       while (name.startsWith("^")) name = name.substring(1);
       return name;
-    }
-
-    public String getOp() {
-      if (null == this.op) {
-        synchronized (this) {
-          if (null == this.op) {
-            final NodeDef nodeDef = getNodeDef();
-            if (null == nodeDef) return "null";
-            this.op = nodeDef.getOp();
-          }
-        }
-      }
-      return op;
     }
   }
 }

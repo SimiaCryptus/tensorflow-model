@@ -38,6 +38,31 @@ public class NodeInstrumentation {
     this.setType(type);
   }
 
+  public DataType getType() {
+    return type;
+  }
+
+  public NodeInstrumentation setType(DataType type) {
+    this.type = type;
+    return this;
+  }
+
+  public boolean isScalar() {
+    return scalar;
+  }
+
+  public NodeInstrumentation setScalar(boolean scalar) {
+    this.scalar = scalar;
+    return this;
+  }
+
+  public NodeInstrumentation setImage(int... image) {
+    assert image.length == 3 : image.length;
+    assert Arrays.asList(1, 3, 4).contains(image[2]) : image[2];
+    this.image = image;
+    return this;
+  }
+
   @NotNull
   public static GraphDef instrument(GraphDef graphDef, String summaryOutput, Function<NodeDef, NodeInstrumentation> config) {
     TensorflowUtil.validate(graphDef);
@@ -162,24 +187,6 @@ public class NodeInstrumentation {
     return nodeDefs;
   }
 
-  public DataType getType() {
-    return type;
-  }
-
-  public NodeInstrumentation setType(DataType type) {
-    this.type = type;
-    return this;
-  }
-
-  public boolean isScalar() {
-    return scalar;
-  }
-
-  public NodeInstrumentation setScalar(boolean scalar) {
-    this.scalar = scalar;
-    return this;
-  }
-
   @Override
   public String toString() {
     return "NodeInstrumentation{" +
@@ -190,12 +197,5 @@ public class NodeInstrumentation {
 
   public int[] isImage() {
     return image;
-  }
-
-  public NodeInstrumentation setImage(int... image) {
-    assert image.length == 3 : image.length;
-    assert Arrays.asList(1, 3, 4).contains(image[2]) : image[2];
-    this.image = image;
-    return this;
   }
 }

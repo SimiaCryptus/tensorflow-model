@@ -23,8 +23,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.jetbrains.annotations.NotNull;
 import org.tensorflow.*;
-import org.tensorflow.framework.*;
 import org.tensorflow.framework.DataType;
+import org.tensorflow.framework.*;
 import org.tensorflow.op.Ops;
 
 import java.util.*;
