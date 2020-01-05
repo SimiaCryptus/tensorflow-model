@@ -123,7 +123,7 @@ public class TensorflowUtil {
     });
   }
 
-  public static <T extends Number> org.tensorflow.Tensor<T> add(org.tensorflow.Tensor<T>... tensors) {
+  public static <T extends Number> Tensor<T> add(Tensor<T>... tensors) {
     return add(Arrays.stream(tensors));
   }
 
@@ -156,7 +156,7 @@ public class TensorflowUtil {
     return builder.build();
   }
 
-  public static <T extends Number> org.tensorflow.Tensor<T> add(Stream<org.tensorflow.Tensor<T>> stream) {
+  public static <T extends Number> Tensor<T> add(Stream<Tensor<T>> stream) {
     return stream.reduce((a, b) -> {
       if (a.dataType() == org.tensorflow.DataType.DOUBLE) {
         Tensor<T> tensor = doubleSum.add(a.expect(Double.class), b.expect(Double.class));

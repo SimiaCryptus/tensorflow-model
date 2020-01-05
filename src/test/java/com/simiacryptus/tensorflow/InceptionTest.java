@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.tensorflow.Graph;
 import org.tensorflow.Output;
+import org.tensorflow.TensorFlowException;
 import org.tensorflow.framework.GraphDef;
 
 import javax.imageio.ImageIO;
@@ -140,7 +141,7 @@ public class InceptionTest {
       });
       GraphModel model = new GraphModel(newGraphDef);
       System.out.println("Model: " + TFUtil.toJson(model));
-    } catch (org.tensorflow.TensorFlowException e) {
+    } catch (TensorFlowException e) {
       e.printStackTrace(System.err);
     }
   }
