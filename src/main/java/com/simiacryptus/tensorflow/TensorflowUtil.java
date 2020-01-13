@@ -21,6 +21,7 @@ package com.simiacryptus.tensorflow;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.simiacryptus.ref.lang.RefUtil;
 import org.jetbrains.annotations.NotNull;
 import org.tensorflow.*;
 import org.tensorflow.framework.DataType;
@@ -65,7 +66,7 @@ public class TensorflowUtil {
     List<String> names = graphDef.getNodeList().stream().map(x -> x.getName()).collect(Collectors.toList());
     graphDef.getNodeList().stream().map(x -> x.getName()).distinct().forEach(names::remove);
     if (!names.isEmpty()) {
-      throw new IllegalStateException("Duplicate names: " + names.stream().reduce((a, b) -> a + ", " + b).get());
+      throw new IllegalStateException("Duplicate names: " + RefUtil.get(names.stream().reduce((a, b) -> a + ", " + b)));
     }
   }
 
@@ -105,7 +106,7 @@ public class TensorflowUtil {
           throw new NoSuchElementException(String.format(
               "%s not found in %s",
               name,
-              nodeList.stream().map(NodeDef::getName).reduce((a, b) -> a + "," + b).get()
+              RefUtil.get(nodeList.stream().map(NodeDef::getName).reduce((a, b) -> a + "," + b))
           ));
         });
     int index = nodeList.indexOf(nodeDef);
@@ -157,7 +158,7 @@ public class TensorflowUtil {
   }
 
   public static <T extends Number> Tensor<T> add(Stream<Tensor<T>> stream) {
-    return stream.reduce((a, b) -> {
+    return RefUtil.get(stream.reduce((a, b) -> {
       if (a.dataType() == org.tensorflow.DataType.DOUBLE) {
         Tensor<T> tensor = doubleSum.add(a.expect(Double.class), b.expect(Double.class));
         a.close();
@@ -169,7 +170,7 @@ public class TensorflowUtil {
         b.close();
         return tensor;
       }
-    }).get();
+    }));
   }
 
   @NotNull
