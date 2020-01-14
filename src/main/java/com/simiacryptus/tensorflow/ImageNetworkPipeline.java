@@ -21,31 +21,34 @@ package com.simiacryptus.tensorflow;
 
 import com.simiacryptus.util.Util;
 import org.apache.commons.io.IOUtils;
-import org.jetbrains.annotations.NotNull;
 import org.tensorflow.framework.GraphDef;
 
+import javax.annotation.Nonnull;
 import java.net.URI;
 import java.util.*;
 import java.util.zip.ZipFile;
 
 public abstract class ImageNetworkPipeline {
 
+  @Nonnull
   public final List<GraphDef> graphDefs;
+  @Nonnull
   public final GraphModel graphModel;
 
-  public ImageNetworkPipeline(GraphDef graphDef) {
+  public ImageNetworkPipeline(@Nonnull GraphDef graphDef) {
     graphModel = new GraphModel(graphDef.toByteArray());
     this.graphDefs = Collections.unmodifiableList(getNodes(graphModel, nodeIds()));
   }
 
-  @NotNull
+  @Nonnull
   public static ImageNetworkPipeline inception5h() {
     return new ImageNetworkPipeline(ImageNetworkPipeline.loadGraphZip(
         "https://storage.googleapis.com/download.tensorflow.org/models/inception5h.zip",
         "tensorflow_inception_graph.pb"
     )) {
       @Override
-      public @NotNull List<String> nodeIds() {
+      public @Nonnull
+      List<String> nodeIds() {
         return Arrays.asList(
             "conv2d0",
             "localresponsenorm1",
@@ -63,7 +66,7 @@ public abstract class ImageNetworkPipeline {
     };
   }
 
-  public static GraphDef loadGraphZip(String zipUrl, String zipPath) {
+  public static GraphDef loadGraphZip(@Nonnull String zipUrl, @Nonnull String zipPath) {
     GraphDef graphDef;
     try (ZipFile zipFile = new ZipFile(Util.cacheFile(new URI(zipUrl)))) {
       byte[] graphDefBytes = IOUtils.toByteArray(zipFile.getInputStream(zipFile.getEntry(zipPath)));
@@ -74,8 +77,8 @@ public abstract class ImageNetworkPipeline {
     return graphDef;
   }
 
-  @NotNull
-  public static ArrayList<GraphDef> getNodes(GraphModel graphModel, List<String> nodes) {
+  @Nonnull
+  public static ArrayList<GraphDef> getNodes(@Nonnull GraphModel graphModel, @Nonnull List<String> nodes) {
     ArrayList<GraphDef> graphs = new ArrayList<>();
     graphs.add(graphModel.getChild(nodes.get(0)).subgraph(new HashSet<>(Arrays.asList())));
     for (int i = 1; i < nodes.size(); i++) {
@@ -84,6 +87,6 @@ public abstract class ImageNetworkPipeline {
     return graphs;
   }
 
-  @NotNull
+  @Nonnull
   public abstract List<String> nodeIds();
 }

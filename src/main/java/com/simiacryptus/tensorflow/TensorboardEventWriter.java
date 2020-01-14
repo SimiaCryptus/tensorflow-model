@@ -29,23 +29,29 @@ import org.tensorflow.util.LogMessage;
 import org.tensorflow.util.SessionLog;
 import org.tensorflow.util.TaggedRunMetadata;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.*;
 import java.net.InetAddress;
 
 public class TensorboardEventWriter implements AutoCloseable {
   private static final long kMaskDelta = 0xa282ead8L;
   private static final long intMask = 0xFFFFFFFFL;
+  @Nullable
   private static volatile String hostName = null;
+  @Nonnull
   public final File location;
+  @Nullable
   private volatile FileOutputStream fileOutputStream = null;
   private long step = 0;
 
-  public TensorboardEventWriter(File location, GraphDef graphDef) throws IOException {
+  public TensorboardEventWriter(@Nonnull File location, @Nonnull GraphDef graphDef) throws IOException {
     this.location = location;
     location.getAbsoluteFile().getParentFile().mkdirs();
     write(graphDef);
   }
 
+  @Nullable
   public static String getHostName() {
     if (null == hostName) {
       synchronized (TensorboardEventWriter.class) {
@@ -63,6 +69,7 @@ public class TensorboardEventWriter implements AutoCloseable {
     return hostName;
   }
 
+  @Nullable
   public OutputStream getOutput() throws IOException {
     if (null == fileOutputStream) {
       synchronized (this) {
@@ -89,12 +96,13 @@ public class TensorboardEventWriter implements AutoCloseable {
     return step;
   }
 
+  @Nonnull
   public TensorboardEventWriter setStep(long step) {
     this.step = step;
     return this;
   }
 
-  public static void write(OutputStream dataInput, byte[] data) throws IOException {
+  public static void write(@Nonnull OutputStream dataInput, @Nonnull byte[] data) throws IOException {
     byte[] header = new byte[12];
     setInt(header, 0, 8, data.length);
     setInt(header, 8, 4, mask(longHash(header, 0, 8)));
@@ -105,7 +113,8 @@ public class TensorboardEventWriter implements AutoCloseable {
     dataInput.write(footer);
   }
 
-  public static byte[] read(DataInputStream dataInput) throws IOException {
+  @Nonnull
+  public static byte[] read(@Nonnull DataInputStream dataInput) throws IOException {
     byte[] header = new byte[12];
     dataInput.readFully(header);
     long length = getInt(header, 0, 8);
@@ -125,7 +134,7 @@ public class TensorboardEventWriter implements AutoCloseable {
     return data;
   }
 
-  public static long longHash(byte[] bytes, int start, int length) {
+  public static long longHash(@Nonnull byte[] bytes, int start, int length) {
     return getInt(Hashing.crc32c().newHasher().putBytes(bytes, start, length).hash().asBytes(), 0, 4);
   }
 
@@ -179,13 +188,13 @@ public class TensorboardEventWriter implements AutoCloseable {
         .build());
   }
 
-  public void write(GraphDef graphDef) throws IOException {
+  public void write(@Nonnull GraphDef graphDef) throws IOException {
     write(Event.newBuilder()
         .setGraphDef(graphDef.toByteString())
         .build());
   }
 
-  public void write(MetaGraphDef metaGraphDef) throws IOException {
+  public void write(@Nonnull MetaGraphDef metaGraphDef) throws IOException {
     write(Event.newBuilder()
         .setMetaGraphDef(metaGraphDef.toByteString())
         .build());
@@ -197,14 +206,15 @@ public class TensorboardEventWriter implements AutoCloseable {
         .build());
   }
 
-  public void write(RunMetadata runMetadata, String tag) throws IOException {
+  public void write(@Nonnull RunMetadata runMetadata, @Nonnull String tag) throws IOException {
     write(Event.newBuilder()
         .setTaggedRunMetadata(TaggedRunMetadata.newBuilder().setRunMetadata(runMetadata.toByteString()).setTag(tag).build())
         .build());
   }
 
-  public void write(Event event) throws IOException {
+  public void write(@Nonnull Event event) throws IOException {
     OutputStream output = getOutput();
+    assert output != null;
     write(output, event.toBuilder()
         .setWallTime(System.currentTimeMillis() / 1000)
         .setStep(getStep())
@@ -221,6 +231,7 @@ public class TensorboardEventWriter implements AutoCloseable {
     }
   }
 
+  @Nonnull
   public TensorboardEventWriter incStep(long step) {
     this.step += step;
     return this;

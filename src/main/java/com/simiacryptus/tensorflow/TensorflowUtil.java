@@ -22,12 +22,13 @@ package com.simiacryptus.tensorflow;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.simiacryptus.ref.lang.RefUtil;
-import org.jetbrains.annotations.NotNull;
 import org.tensorflow.*;
 import org.tensorflow.framework.DataType;
 import org.tensorflow.framework.*;
 import org.tensorflow.op.Ops;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -38,7 +39,8 @@ public class TensorflowUtil {
   private static final SumFn doubleSum = new SumFn(Double.class);
   private static final SumFn floatSum = new SumFn(Float.class);
 
-  public static Operation find(Graph graph, String name) {
+  @Nullable
+  public static Operation find(@Nonnull Graph graph, String name) {
     Iterator<Operation> operations = graph.operations();
     while (operations.hasNext()) {
       Operation operation = operations.next();
@@ -49,7 +51,7 @@ public class TensorflowUtil {
     return null;
   }
 
-  public static byte[] makeGraph(Consumer<Ops> builder) {
+  public static byte[] makeGraph(@Nonnull Consumer<Ops> builder) {
     try (Graph graph = new Graph()) {
       builder.accept(Ops.create(graph));
       byte[] bytes = graph.toGraphDef();
@@ -62,7 +64,7 @@ public class TensorflowUtil {
     }
   }
 
-  public static void validate(GraphDef graphDef) {
+  public static void validate(@Nonnull GraphDef graphDef) {
     List<String> names = graphDef.getNodeList().stream().map(x -> x.getName()).collect(Collectors.toList());
     graphDef.getNodeList().stream().map(x -> x.getName()).distinct().forEach(names::remove);
     if (!names.isEmpty()) {
@@ -70,23 +72,24 @@ public class TensorflowUtil {
     }
   }
 
-  public static String addConst(GraphDef.Builder graphBuilder, String name, TensorShapeProto shape, String... label) {
+  @Nonnull
+  public static String addConst(@Nonnull GraphDef.Builder graphBuilder, @Nonnull String name, TensorShapeProto shape, String... label) {
     graphBuilder.addNode(newConst(name, shape, label));
     return name;
   }
 
-  @NotNull
-  public static NodeDef newConst(String name, TensorShapeProto shape, String[] label) {
+  @Nonnull
+  public static NodeDef newConst(@Nonnull String name, TensorShapeProto shape, String[] label) {
     return newConst(name, getTensorAttr(shape, label), DataType.DT_STRING);
   }
 
-  @NotNull
+  @Nonnull
   public static AttrValue getTensorAttr(TensorShapeProto shape, String... label) {
     return AttrValue.newBuilder().setTensor(buildTensor(shape, label)).build();
   }
 
-  @NotNull
-  public static NodeDef newConst(String name, AttrValue attrValue, DataType dtString) {
+  @Nonnull
+  public static NodeDef newConst(@Nonnull String name, @Nonnull AttrValue attrValue, @Nonnull DataType dtString) {
     return NodeDef.newBuilder()
         .setName(name)
         .setOp("Const")
@@ -95,11 +98,12 @@ public class TensorflowUtil {
         .build();
   }
 
-  public static GraphDef editGraph(GraphDef graph, Function<GraphDef.Builder, GraphDef.Builder> edit) {
+  @Nonnull
+  public static GraphDef editGraph(@Nonnull GraphDef graph, @Nonnull Function<GraphDef.Builder, GraphDef.Builder> edit) {
     return edit.apply(graph.toBuilder()).build();
   }
 
-  public static void editNode(GraphDef.Builder graphBuilder, String name, Function<NodeDef.Builder, NodeDef.Builder> edit) {
+  public static void editNode(@Nonnull GraphDef.Builder graphBuilder, String name, @Nonnull Function<NodeDef.Builder, NodeDef.Builder> edit) {
     List<NodeDef> nodeList = graphBuilder.getNodeList();
     NodeDef nodeDef = nodeList.stream().filter(x -> x.getName().equals(name)).findAny()
         .orElseGet(() -> {
@@ -114,7 +118,7 @@ public class TensorflowUtil {
     graphBuilder.addNode(edit.apply(nodeDef.toBuilder()).build());
   }
 
-  public static void editNodes(GraphDef.Builder graphBuilder, Function<NodeDef, NodeDef> edit) {
+  public static void editNodes(@Nonnull GraphDef.Builder graphBuilder, @Nonnull Function<NodeDef, NodeDef> edit) {
     new ArrayList<>(graphBuilder.getNodeList()).stream().forEach(previousValue -> {
       NodeDef newValue = edit.apply(previousValue);
       if (newValue != previousValue) {
@@ -124,11 +128,13 @@ public class TensorflowUtil {
     });
   }
 
-  public static <T extends Number> Tensor<T> add(Tensor<T>... tensors) {
+  @Nonnull
+  public static <T extends Number> Tensor<T> add(@Nonnull Tensor<T>... tensors) {
     return add(Arrays.stream(tensors));
   }
 
-  public static TensorProto buildTensor(TensorShapeProto tensorShapeProto, int... vs) {
+  @Nonnull
+  public static TensorProto buildTensor(TensorShapeProto tensorShapeProto, @Nonnull int... vs) {
     TensorProto.Builder tensor = TensorProto.newBuilder()
         .setDtype(DataType.DT_INT32)
         .setTensorShape(tensorShapeProto);
@@ -138,7 +144,8 @@ public class TensorflowUtil {
     return tensor.build();
   }
 
-  public static TensorProto buildTensor(TensorShapeProto tensorShapeProto, String... vs) {
+  @Nonnull
+  public static TensorProto buildTensor(TensorShapeProto tensorShapeProto, @Nonnull String... vs) {
     TensorProto.Builder tensor = TensorProto.newBuilder()
         .setDtype(DataType.DT_STRING)
         .setTensorShape(tensorShapeProto);
@@ -148,8 +155,8 @@ public class TensorflowUtil {
     return tensor.build();
   }
 
-  @NotNull
-  public static TensorShapeProto buildTensorShape(long... dims) {
+  @Nonnull
+  public static TensorShapeProto buildTensorShape(@Nonnull long... dims) {
     TensorShapeProto.Builder builder = TensorShapeProto.newBuilder();
     for (long l : dims) {
       builder.addDim(TensorShapeProto.Dim.newBuilder().setSize(l).build());
@@ -157,7 +164,8 @@ public class TensorflowUtil {
     return builder.build();
   }
 
-  public static <T extends Number> Tensor<T> add(Stream<Tensor<T>> stream) {
+  @Nonnull
+  public static <T extends Number> Tensor<T> add(@Nonnull Stream<Tensor<T>> stream) {
     return RefUtil.get(stream.reduce((a, b) -> {
       if (a.dataType() == org.tensorflow.DataType.DOUBLE) {
         Tensor<T> tensor = doubleSum.add(a.expect(Double.class), b.expect(Double.class));
@@ -173,8 +181,8 @@ public class TensorflowUtil {
     }));
   }
 
-  @NotNull
-  public static List<NodeDef> rankNode(NodeDef node, DataType type, String rankNode) {
+  @Nonnull
+  public static List<NodeDef> rankNode(@Nonnull NodeDef node, @Nonnull DataType type, @Nonnull String rankNode) {
     String endNode = rankNode + "/end";
     String startNode = rankNode + "/start";
     String stepNode = rankNode + "/step";
@@ -202,7 +210,9 @@ public class TensorflowUtil {
   }
 
   public static class SumFn<T extends Number> {
+    @Nonnull
     private final Graph sumGraph;
+    @Nonnull
     private final Session sumSession;
     private final Output<T> in1;
     private final Output<T> in2;
@@ -220,7 +230,7 @@ public class TensorflowUtil {
       sumSession = new Session(sumGraph);
     }
 
-    @NotNull
+    @Nonnull
     public Tensor<Double> add(Tensor<T> a, Tensor<T> b) {
       return sumSession.runner().feed(in1, a).feed(in2, b).fetch(out).run().get(0).expect(Double.class);
     }

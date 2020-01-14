@@ -28,6 +28,8 @@ import org.apache.commons.io.IOUtils;
 import org.tensorflow.*;
 import org.tensorflow.util.Event;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.awt.*;
 import java.io.*;
 import java.net.URI;
@@ -43,7 +45,7 @@ import java.util.stream.StreamSupport;
 import java.util.zip.ZipFile;
 
 public class TFUtil {
-  public static byte[] editGraph(byte[] protobufBinaryData, Consumer<Graph> operator) {
+  public static byte[] editGraph(@Nonnull byte[] protobufBinaryData, @Nonnull Consumer<Graph> operator) {
     byte[] newGraphDef;
     try (Graph graph = new Graph()) {
       graph.importGraphDef(protobufBinaryData);
@@ -53,7 +55,8 @@ public class TFUtil {
     return newGraphDef;
   }
 
-  public static Operation find(Graph graph, String name) {
+  @Nullable
+  public static Operation find(@Nonnull Graph graph, String name) {
     Iterator<Operation> operations = graph.operations();
     while (operations.hasNext()) {
       Operation operation = operations.next();
@@ -64,7 +67,7 @@ public class TFUtil {
     return null;
   }
 
-  public static byte[] loadZipUrl(String uri, String file) throws Exception {
+  public static byte[] loadZipUrl(@Nonnull String uri, @Nonnull String file) throws Exception {
     try (ZipFile zipFile = new ZipFile(Util.cacheFile(new URI(uri)))) {
       return IOUtils.toByteArray(zipFile.getInputStream(zipFile.getEntry(file)));
     }
@@ -74,7 +77,7 @@ public class TFUtil {
     return new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(output);
   }
 
-  public static double[] getFloatValues(Tensor<Float> result) {
+  public static double[] getFloatValues(@Nonnull Tensor<Float> result) {
     final long[] shape = result.shape();
     long length = Arrays.stream(shape).reduce((a, b) -> a * b).getAsLong();
     if (shape.length == 1) {
@@ -87,7 +90,7 @@ public class TFUtil {
     }
   }
 
-  public static String describeGraph(Graph graph) {
+  public static String describeGraph(@Nonnull Graph graph) {
     OutputStream stringOutputStream = new ByteArrayOutputStream();
     try (PrintStream outputStream = new PrintStream(stringOutputStream)) {
       for (Iterator<Operation> iter = graph.operations(); iter.hasNext(); ) {
@@ -108,12 +111,13 @@ public class TFUtil {
     return stringOutputStream.toString();
   }
 
-  public static File[] allFiles(File file) {
+  @Nonnull
+  public static File[] allFiles(@Nonnull File file) {
     if (file.isFile()) return new File[]{file};
     else return Arrays.stream(file.listFiles()).flatMap(f -> Arrays.stream(allFiles(f))).toArray(i -> new File[i]);
   }
 
-  public static void launchTensorboard(String logDir, Consumer<Process> waiter) throws IOException, URISyntaxException {
+  public static void launchTensorboard(String logDir, @Nonnull Consumer<Process> waiter) throws IOException, URISyntaxException {
     Process tensorboard = new ProcessBuilder().command(
         System.getProperty("tensorboard", System.getProperty("user.home") + "\\AppData\\Local\\Programs\\Python\\Python36\\Scripts\\tensorboard.exe"),
         "--logdir=" + logDir
@@ -126,7 +130,7 @@ public class TFUtil {
     }
   }
 
-  public static void dumpEvents(String file) throws IOException {
+  public static void dumpEvents(@Nonnull String file) throws IOException {
     InputStream inputStream = new FileInputStream(file);
     inputStream = new BufferedInputStream(inputStream);
     DataInputStream dataInput = new DataInputStream(inputStream);
@@ -136,7 +140,8 @@ public class TFUtil {
     }
   }
 
-  public static Stream<Event> streamEvents(String file) throws IOException {
+  @Nonnull
+  public static Stream<Event> streamEvents(@Nonnull String file) throws IOException {
     InputStream inputStream = new FileInputStream(file);
     inputStream = new BufferedInputStream(inputStream);
     DataInputStream dataInput = new DataInputStream(inputStream);

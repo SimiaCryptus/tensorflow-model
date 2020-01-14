@@ -22,6 +22,7 @@ package com.simiacryptus.tensorflow;
 import org.junit.Test;
 import org.tensorflow.framework.GraphDef;
 
+import javax.annotation.Nonnull;
 import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
@@ -48,7 +49,7 @@ public class DeconstructionTest {
     });
   }
 
-  public void launchTensorboard(File tensorboardDir) throws IOException, URISyntaxException {
+  public void launchTensorboard(@Nonnull File tensorboardDir) throws IOException, URISyntaxException {
     TFUtil.launchTensorboard(tensorboardDir.getAbsolutePath(), tensorboard -> {
       try {
         JOptionPane.showConfirmDialog(null, "OK to continue");
@@ -59,7 +60,7 @@ public class DeconstructionTest {
     });
   }
 
-  public File writeGraph(GraphDef graphDef, File location, String name) throws IOException {
+  public File writeGraph(@Nonnull GraphDef graphDef, File location, @Nonnull String name) throws IOException {
     TensorboardEventWriter eventWriter = new TensorboardEventWriter(
         new File(location, name),
         graphDef);

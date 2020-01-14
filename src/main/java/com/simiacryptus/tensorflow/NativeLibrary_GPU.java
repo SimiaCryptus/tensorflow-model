@@ -19,6 +19,7 @@
 
 package com.simiacryptus.tensorflow;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -115,7 +116,8 @@ public final class NativeLibrary_GPU {
     }
   }
 
-  private static String maybeAdjustForMacOS(String libFilename) {
+  @Nonnull
+  private static String maybeAdjustForMacOS(@Nonnull String libFilename) {
     if (!System.getProperty("os.name").contains("OS X")) {
       return libFilename;
     }
@@ -134,7 +136,7 @@ public final class NativeLibrary_GPU {
   }
 
   private static String extractResource(
-      InputStream resource, String resourceName, String extractToDirectory) throws IOException {
+      @Nonnull InputStream resource, @Nonnull String resourceName, String extractToDirectory) throws IOException {
     final File dst = new File(extractToDirectory, resourceName);
     dst.deleteOnExit();
     final String dstPath = dst.toString();
@@ -144,6 +146,7 @@ public final class NativeLibrary_GPU {
     return dstPath;
   }
 
+  @Nonnull
   private static String os() {
     final String p = System.getProperty("os.name").toLowerCase();
     if (p.contains("linux")) {
@@ -157,6 +160,7 @@ public final class NativeLibrary_GPU {
     }
   }
 
+  @Nonnull
   private static String architecture() {
     final String arch = System.getProperty("os.arch").toLowerCase();
     return (arch.equals("amd64")) ? "x86_64" : arch;
@@ -168,11 +172,12 @@ public final class NativeLibrary_GPU {
     }
   }
 
+  @Nonnull
   private static String makeResourceName(String baseName) {
     return "org/tensorflow/native/" + String.format("%s-%s/", os(), architecture()) + baseName;
   }
 
-  private static long copy(InputStream src, File dstFile) throws IOException {
+  private static long copy(@Nonnull InputStream src, @Nonnull File dstFile) throws IOException {
     FileOutputStream dst = new FileOutputStream(dstFile);
     try {
       byte[] buffer = new byte[1 << 20]; // 1MB
@@ -191,6 +196,7 @@ public final class NativeLibrary_GPU {
 
   // Shamelessly adapted from Guava to avoid using java.nio, for Android API
   // compatibility.
+  @Nonnull
   private static File createTemporaryDirectory() {
     File baseDirectory = new File(System.getProperty("java.io.tmpdir"));
     String directoryName = "tensorflow_native_libraries-" + System.currentTimeMillis() + "-";

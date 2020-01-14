@@ -25,6 +25,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.tensorflow.framework.*;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,19 +65,23 @@ public class GraphModel {
     return graphDef;
   }
 
-  public static double[] toDoubles(float[] values) {
+  @Nullable
+  public static double[] toDoubles(@Nullable float[] values) {
     return null == values ? null : Floats.asList(values).stream().mapToDouble(x -> x).toArray();
   }
 
-  public static double[] toDoubles(int[] values) {
+  @Nullable
+  public static double[] toDoubles(@Nullable int[] values) {
     return null == values ? null : Arrays.stream(values).mapToDouble(x -> x).toArray();
   }
 
-  public static double[] toDoubles(long[] values) {
+  @Nullable
+  public static double[] toDoubles(@Nullable long[] values) {
     return null == values ? null : Arrays.stream(values).mapToDouble(x -> x).toArray();
   }
 
-  public static HashMap<String, Double> summary(double[] values) {
+  @Nullable
+  public static HashMap<String, Double> summary(@Nullable double[] values) {
     if (null == values) return null;
     DoubleSummaryStatistics finiteStatistics = Arrays.stream(values).filter(x -> Double.isFinite(x)).summaryStatistics();
     long nanCount = Arrays.stream(values).filter(x -> Double.isNaN(x)).count();
@@ -92,7 +97,8 @@ public class GraphModel {
     return data;
   }
 
-  public static int[] getInts(ByteBuffer byteBuffer) {
+  @Nonnull
+  public static int[] getInts(@Nonnull ByteBuffer byteBuffer) {
     int[] values = new int[byteBuffer.limit() / 4];
     byte in[] = {0, 0, 0, 0};
     for (int i = 0; i < values.length; i++) {
@@ -106,7 +112,8 @@ public class GraphModel {
     return values;
   }
 
-  public static long[] getLongs(ByteBuffer byteBuffer) {
+  @Nonnull
+  public static long[] getLongs(@Nonnull ByteBuffer byteBuffer) {
     long[] values = new long[byteBuffer.limit() / 8];
     byte in[] = {0, 0, 0, 0, 0, 0, 0, 0};
     for (int i = 0; i < values.length; i++) {
@@ -123,11 +130,13 @@ public class GraphModel {
 //    return values;
   }
 
-  public static ByteBuffer putDoubles(double[] values) {
+  @Nonnull
+  public static ByteBuffer putDoubles(@Nonnull double[] values) {
     return (ByteBuffer) putDoubles(ByteBuffer.allocate(values.length * 8), values).flip();
   }
 
-  public static ByteBuffer putDoubles(ByteBuffer byteBuffer, double[] values) {
+  @Nonnull
+  public static ByteBuffer putDoubles(@Nonnull ByteBuffer byteBuffer, @Nonnull double[] values) {
     byte in[] = {0, 0, 0, 0, 0, 0, 0, 0};
     for (int i = 0; i < values.length; i++) {
       long value = Double.doubleToLongBits(values[i]);
@@ -139,7 +148,8 @@ public class GraphModel {
     return byteBuffer;
   }
 
-  public static double[] getDoubles(ByteBuffer byteBuffer) {
+  @Nonnull
+  public static double[] getDoubles(@Nonnull ByteBuffer byteBuffer) {
     double[] values = new double[byteBuffer.limit() / 8];
     byte in[] = {0, 0, 0, 0, 0, 0, 0, 0};
     for (int i = 0; i < values.length; i++) {
@@ -153,11 +163,13 @@ public class GraphModel {
     return values;
   }
 
-  public static ByteBuffer putFloats(float[] values) {
+  @Nonnull
+  public static ByteBuffer putFloats(@Nonnull float[] values) {
     return (ByteBuffer) putFloats(ByteBuffer.allocate(values.length * 8), values).flip();
   }
 
-  public static ByteBuffer putFloats(ByteBuffer byteBuffer, float[] values) {
+  @Nonnull
+  public static ByteBuffer putFloats(@Nonnull ByteBuffer byteBuffer, @Nonnull float[] values) {
     byte in[] = {0, 0, 0, 0};
     for (int i = 0; i < values.length; i++) {
       int value = Float.floatToIntBits(values[i]);
@@ -169,7 +181,8 @@ public class GraphModel {
     return byteBuffer;
   }
 
-  public static float[] getFloats(ByteBuffer byteBuffer) {
+  @Nonnull
+  public static float[] getFloats(@Nonnull ByteBuffer byteBuffer) {
     float[] values = new float[byteBuffer.limit() / 4];
     byte in[] = {0, 0, 0, 0};
     for (int i = 0; i < values.length; i++) {
@@ -183,7 +196,7 @@ public class GraphModel {
     return values;
   }
 
-  public Map<String, DeltaRecord> compare(GraphModel other) {
+  public Map<String, DeltaRecord> compare(@Nonnull GraphModel other) {
     final Map<String, GraphNode> myNodes = getNodes();
     final Map<String, GraphNode> yourNodes = other.getNodes();
     return Stream.concat(
@@ -194,7 +207,7 @@ public class GraphModel {
       final GraphNode r = yourNodes.get(name);
       boolean equals = true;
       if (null == l || null == r) return Stream.of(new DeltaRecord(name, l, r));
-      equals &= l.getProperties().equals(r.getProperties());
+      equals = l.getProperties().equals(r.getProperties());
       equals &= Arrays.equals(l.getShape(), r.getShape());
       equals &= Arrays.equals(l.getData(), r.getData());
       equals &= l.getInputKeys().equals(r.getInputKeys());
@@ -205,7 +218,7 @@ public class GraphModel {
     }).collect(Collectors.toMap(x -> x.name, x -> x));
   }
 
-  public GraphNode getChild(String x) {
+  public GraphNode getChild(@Nonnull String x) {
     return nodeCache.computeIfAbsent(x, y -> new GraphNode(y));
   }
 
@@ -223,16 +236,21 @@ public class GraphModel {
 
   public class GraphNode {
     public final String name;
+    @Nullable
     @JsonIgnore
     private transient NodeDef nodeDef = null;
+    @Nullable
     private transient String op = null;
+    @Nullable
     private volatile Integer order = null;
+    @Nullable
     private volatile List<GraphNode> rootInputs = null;
 
     protected GraphNode(String name) {
       this.name = name;
     }
 
+    @Nullable
     @JsonIgnore
     public double[] getData() {
       DataType dataType = getDataType();
@@ -244,13 +262,14 @@ public class GraphModel {
         return toDoubles(getInts());
       } else if (dataType == DataType.DT_INT64) {
         return toDoubles(getLongs());
-      } else if (dataType == null || dataType == DataType.UNRECOGNIZED) {
+      } else if (dataType == DataType.UNRECOGNIZED) {
         return null;
       } else {
         throw new RuntimeException("Unsupported Data Type: " + dataType);
       }
     }
 
+    @Nullable
     public Object getDataSummary() {
       if (getDataType() == DataType.DT_STRING) {
         return "";
@@ -279,18 +298,21 @@ public class GraphModel {
       return type;
     }
 
+    @Nullable
     public String getDataTypeString() {
       DataType dataType = getDataType();
       if (dataType == DataType.UNRECOGNIZED) return null;
       return dataType.toString();
     }
 
+    @Nullable
     @JsonIgnore
     public double[] getDoubles() {
       TensorProto tensor = getTensor();
       return null == tensor ? null : GraphModel.getDoubles(tensor.getTensorContent().asReadOnlyByteBuffer());
     }
 
+    @Nullable
     @JsonIgnore
     public float[] getFloats() {
       TensorProto tensor = getTensor();
@@ -308,18 +330,21 @@ public class GraphModel {
       return nodeDef.getInputList().stream().map(x -> getChild(x)).collect(Collectors.toList());
     }
 
+    @Nullable
     @JsonIgnore
     public int[] getInts() {
       TensorProto tensor = getTensor();
       return null == tensor ? null : GraphModel.getInts(tensor.getTensorContent().asReadOnlyByteBuffer());
     }
 
+    @Nullable
     @JsonIgnore
     public long[] getLongs() {
       TensorProto tensor = getTensor();
       return null == tensor ? null : GraphModel.getLongs(tensor.getTensorContent().asReadOnlyByteBuffer());
     }
 
+    @Nullable
     @JsonIgnore
     public NodeDef getNodeDef() {
       if (null == this.nodeDef) {
@@ -336,6 +361,7 @@ public class GraphModel {
       return nodeDef;
     }
 
+    @Nullable
     public String getOp() {
       if (null == this.op) {
         synchronized (this) {
@@ -375,6 +401,7 @@ public class GraphModel {
           }));
     }
 
+    @Nullable
     @JsonIgnore
     public List<GraphNode> getRootInputs() {
       if (null == rootInputs) {
@@ -399,6 +426,7 @@ public class GraphModel {
       return getRootInputs().stream().map(x -> x.name).collect(Collectors.toList());
     }
 
+    @Nullable
     public long[] getShape() {
       Map<String, AttrValue> attrMap = getNodeDef().getAttrMap();
       TensorShapeProto shape;
@@ -412,12 +440,14 @@ public class GraphModel {
       return shape.getDimList().stream().mapToLong(x -> x.getSize()).toArray();
     }
 
+    @Nullable
     @JsonIgnore
     public TensorProto getTensor() {
       Map<String, AttrValue> attrMap = getNodeDef().getAttrMap();
       return !attrMap.containsKey("value") ? null : attrMap.get("value").getTensor();
     }
 
+    @Nonnull
     @Override
     public String toString() {
       return "GraphNode{" +
@@ -429,7 +459,8 @@ public class GraphModel {
           '}';
     }
 
-    public GraphDef subgraph(Set<String> inputs) {
+    @Nonnull
+    public GraphDef subgraph(@Nonnull Set<String> inputs) {
       GraphDef.Builder builder = GraphDef.newBuilder();
       for (String input : inputs) {
         builder.addNode(NodeDef.newBuilder()
@@ -443,7 +474,7 @@ public class GraphModel {
     }
 
     @JsonIgnore
-    public List<GraphNode> subgraphNodes(Set<String> inputs) {
+    public List<GraphNode> subgraphNodes(@Nonnull Set<String> inputs) {
       List<GraphNode> subgraph;
       if (inputs.contains(name)) {
         subgraph = Arrays.asList();
@@ -459,7 +490,7 @@ public class GraphModel {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(@Nullable Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
       GraphNode graphNode = (GraphNode) o;

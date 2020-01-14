@@ -19,9 +19,10 @@
 
 package com.simiacryptus.tensorflow;
 
-import org.jetbrains.annotations.NotNull;
 import org.tensorflow.framework.*;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.function.Function;
@@ -32,6 +33,7 @@ import static com.simiacryptus.tensorflow.TensorflowUtil.buildTensorShape;
 public class NodeInstrumentation {
   private DataType type;
   private boolean scalar = true;
+  @Nullable
   private int[] image = null;
 
   public NodeInstrumentation(DataType type) {
@@ -42,6 +44,7 @@ public class NodeInstrumentation {
     return type;
   }
 
+  @Nonnull
   public NodeInstrumentation setType(DataType type) {
     this.type = type;
     return this;
@@ -51,20 +54,22 @@ public class NodeInstrumentation {
     return scalar;
   }
 
+  @Nonnull
   public NodeInstrumentation setScalar(boolean scalar) {
     this.scalar = scalar;
     return this;
   }
 
-  public NodeInstrumentation setImage(int... image) {
+  @Nonnull
+  public NodeInstrumentation setImage(@Nonnull int... image) {
     assert image.length == 3 : image.length;
     assert Arrays.asList(1, 3, 4).contains(image[2]) : image[2];
     this.image = image;
     return this;
   }
 
-  @NotNull
-  public static GraphDef instrument(GraphDef graphDef, String summaryOutput, Function<NodeDef, NodeInstrumentation> config) {
+  @Nonnull
+  public static GraphDef instrument(@Nonnull GraphDef graphDef, @Nonnull String summaryOutput, @Nonnull Function<NodeDef, NodeInstrumentation> config) {
     TensorflowUtil.validate(graphDef);
     graphDef = TensorflowUtil.editGraph(graphDef, graphBuilder -> {
       ArrayList<NodeDef> nodeDefs = new ArrayList<>();
@@ -90,7 +95,7 @@ public class NodeInstrumentation {
     return graphDef;
   }
 
-  public static DataType getDataType(NodeDef node, DataType dataType) {
+  public static DataType getDataType(@Nonnull NodeDef node, DataType dataType) {
     if (node.getAttrMap().containsKey("value")) {
       TensorProto tensor = node.getAttrOrThrow("value").getTensor();
       dataType = tensor.getDtype();
@@ -101,7 +106,8 @@ public class NodeInstrumentation {
     return dataType;
   }
 
-  public ArrayList<NodeDef> instrument(GraphDef.Builder graphBuilder, NodeDef node) {
+  @Nonnull
+  public ArrayList<NodeDef> instrument(@Nonnull GraphDef.Builder graphBuilder, @Nonnull NodeDef node) {
     ArrayList<NodeDef> nodeDefs = new ArrayList<>();
     String label = node.getName();
 
@@ -164,6 +170,7 @@ public class NodeInstrumentation {
 
     if (isImage() != null) {
       String shapeName = label + "/summary/ImageSummary/Shape";
+      assert this.image != null;
       graphBuilder.addNode(TensorflowUtil.newConst(
           shapeName,
           AttrValue.newBuilder().setTensor(TensorflowUtil.buildTensor(buildTensorShape(4), -1, this.image[0], this.image[1], this.image[2])).build(),
@@ -187,6 +194,7 @@ public class NodeInstrumentation {
     return nodeDefs;
   }
 
+  @Nonnull
   @Override
   public String toString() {
     return "NodeInstrumentation{" +
@@ -195,6 +203,7 @@ public class NodeInstrumentation {
         '}';
   }
 
+  @Nullable
   public int[] isImage() {
     return image;
   }

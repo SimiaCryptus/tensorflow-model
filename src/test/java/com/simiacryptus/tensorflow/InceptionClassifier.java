@@ -32,6 +32,7 @@ import org.tensorflow.framework.Summary;
 import org.tensorflow.op.Ops;
 import org.tensorflow.op.core.DecodeJpeg;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -45,8 +46,10 @@ public class InceptionClassifier implements AutoCloseable {
 
   public final List<String> labels;
   public final GraphDef graphDef;
+  @Nonnull
   public final TensorboardEventWriter eventWriter;
   public final File eventWriterLocation = new File("target/" + new SimpleDateFormat("yyyyMMddHHmm").format(new Date()) + "/tensorboard");
+  @Nonnull
   File outputLocation = new File(eventWriterLocation, "run1/events");
 
   public InceptionClassifier() {
@@ -60,7 +63,8 @@ public class InceptionClassifier implements AutoCloseable {
     }
   }
 
-  private static Tensor<Float> normalizeImage(byte[] imageBytes) {
+  @Nonnull
+  private static Tensor<Float> normalizeImage(@Nonnull byte[] imageBytes) {
     try (Graph graph = new Graph()) {
       Ops ops = Ops.create(graph);
       final Output<Float> normalizedImage =
@@ -85,7 +89,7 @@ public class InceptionClassifier implements AutoCloseable {
     }
   }
 
-  public double[] predictImgBytes(byte[] imageBytes) {
+  public double[] predictImgBytes(@Nonnull byte[] imageBytes) {
     try (Tensor<Float> imageInput = normalizeImage(imageBytes)) {
       try (Tensor<Float> classificationResult = inception(imageInput)) {
         return TFUtil.getFloatValues(classificationResult);
@@ -98,6 +102,7 @@ public class InceptionClassifier implements AutoCloseable {
     eventWriter.close();
   }
 
+  @Nonnull
   private Tensor<Float> inception(Tensor<Float> image) {
     try (Graph graph = new Graph()) {
       graph.importGraphDef(graphDef.toByteArray());
