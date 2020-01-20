@@ -21,6 +21,7 @@ package com.simiacryptus.tensorflow;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.simiacryptus.ref.lang.RefAware;
 import com.simiacryptus.ref.lang.RefUtil;
 import org.tensorflow.*;
 import org.tensorflow.framework.DataType;
@@ -99,11 +100,13 @@ public class TensorflowUtil {
   }
 
   @Nonnull
-  public static GraphDef editGraph(@Nonnull GraphDef graph, @Nonnull Function<GraphDef.Builder, GraphDef.Builder> edit) {
-    return edit.apply(graph.toBuilder()).build();
+  public static GraphDef editGraph(@Nonnull GraphDef graph, @Nonnull @RefAware Function<GraphDef.Builder, GraphDef.Builder> edit) {
+    GraphDef build = edit.apply(graph.toBuilder()).build();
+    RefUtil.freeRef(build);
+    return build;
   }
 
-  public static void editNode(@Nonnull GraphDef.Builder graphBuilder, String name, @Nonnull Function<NodeDef.Builder, NodeDef.Builder> edit) {
+  public static void editNode(@Nonnull GraphDef.Builder graphBuilder, String name, @Nonnull @RefAware Function<NodeDef.Builder, NodeDef.Builder> edit) {
     List<NodeDef> nodeList = graphBuilder.getNodeList();
     NodeDef nodeDef = nodeList.stream().filter(x -> x.getName().equals(name)).findAny()
         .orElseGet(() -> {
@@ -116,6 +119,7 @@ public class TensorflowUtil {
     int index = nodeList.indexOf(nodeDef);
     graphBuilder.removeNode(index);
     graphBuilder.addNode(edit.apply(nodeDef.toBuilder()).build());
+    RefUtil.freeRef(edit);
   }
 
   public static void editNodes(@Nonnull GraphDef.Builder graphBuilder, @Nonnull Function<NodeDef, NodeDef> edit) {
@@ -239,6 +243,5 @@ public class TensorflowUtil {
       sumSession.close();
       sumGraph.close();
     }
-
   }
 }
