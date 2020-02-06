@@ -139,25 +139,25 @@ public class TensorboardEventWriter implements AutoCloseable {
   }
 
   public static long unmask(long masked_crc) {
-    long rot = (masked_crc > kMaskDelta) ? (masked_crc - kMaskDelta) : (masked_crc + ((intMask + 1) - kMaskDelta));
-    return (((rot >>> 17) | (rot << 15)) & intMask) & intMask;
+    long rot = masked_crc > kMaskDelta ? masked_crc - kMaskDelta : masked_crc + intMask + 1 - kMaskDelta;
+    return (rot >>> 17 | rot << 15) & intMask & intMask;
   }
 
   public static long mask(long crc) {
-    return ((((crc >>> 15) | (crc << 17)) & intMask) + kMaskDelta) & intMask;
+    return ((crc >>> 15 | crc << 17) & intMask) + kMaskDelta & intMask;
   }
 
   public static long getInt(byte[] bytes, int start, int length) {
     long value = 0;
     for (int offset = 0; offset < length; offset++) {
-      value += (bytes[start + offset] & 0xFFL) << (offset * 8);
+      value += (bytes[start + offset] & 0xFFL) << offset * 8;
     }
     return value;
   }
 
   private static long setInt(byte[] bytes, int start, int length, long value) {
     for (int offset = 0; offset < length; offset++) {
-      bytes[start + offset] = (byte) ((value >> (offset * 8)) & 0xFF);
+      bytes[start + offset] = (byte) (value >> offset * 8 & 0xFF);
     }
     return value;
   }

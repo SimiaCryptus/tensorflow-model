@@ -85,7 +85,7 @@ public class NodeInstrumentation {
         graphBuilder.addNode(NodeDef.newBuilder()
             .setName(summaryOutput)
             .setOp("MergeSummary")
-            .addAllInput(nodeDefs.stream().map(NodeDef::getName).collect(Collectors.toList()))
+            .addAllInput(nodeDefs.stream().map(nodeDef -> nodeDef.getName()).collect(Collectors.toList()))
             .putAttr("N", AttrValue.newBuilder().setI(nodeDefs.size()).build())
             .build());
       }

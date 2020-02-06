@@ -163,7 +163,7 @@ public final class NativeLibrary_GPU {
   @Nonnull
   private static String architecture() {
     final String arch = System.getProperty("os.arch").toLowerCase();
-    return (arch.equals("amd64")) ? "x86_64" : arch;
+    return arch.equals("amd64") ? "x86_64" : arch;
   }
 
   private static void log(String msg) {

@@ -59,8 +59,8 @@ public class InceptionTest {
   public void testReferenceData() throws IOException {
     System.out.println(GraphDef.parseFrom(FileUtils.readFileToByteArray(new File("H:\\SimiaCryptus\\tensorflow\\tensorflow\\examples\\tutorials\\mnist\\model\\train.pb"))));
     TFUtil.streamEvents("H:\\SimiaCryptus\\tensorflow\\tensorflow\\examples\\tutorials\\mnist\\tmp\\test\\events.out.tfevents.1549408929.DESKTOP-L7C95P7")
-        .map(AbstractMessage::toString)
-        .forEach(System.out::println);
+        .map(event -> event.toString())
+        .forEach(x -> System.out.println(x));
   }
 
   @Test

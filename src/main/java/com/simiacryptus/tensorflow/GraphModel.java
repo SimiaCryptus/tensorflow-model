@@ -105,7 +105,7 @@ public class GraphModel {
       byteBuffer.get(in);
       int value = 0;
       for (int b = 0; b < 4; b++) {
-        value |= (in[b] & 0xFFL) << (8 * b);
+        value |= (in[b] & 0xFFL) << 8 * b;
       }
       values[i] = value;
     }
@@ -120,7 +120,7 @@ public class GraphModel {
       byteBuffer.get(in);
       long value = 0;
       for (int b = 0; b < 4; b++) {
-        value |= (in[b] & 0xFFL) << (8 * b);
+        value |= (in[b] & 0xFFL) << 8 * b;
       }
       values[i] = value;
     }
@@ -141,7 +141,7 @@ public class GraphModel {
     for (int i = 0; i < values.length; i++) {
       long value = Double.doubleToLongBits(values[i]);
       for (int b = 0; b < 8; b++) {
-        in[b] = (byte) ((value >> (8 * b)) & 0xFFL);
+        in[b] = (byte) (value >> 8 * b & 0xFFL);
       }
       byteBuffer.put(in);
     }
@@ -156,7 +156,7 @@ public class GraphModel {
       byteBuffer.get(in);
       long value = 0;
       for (int b = 0; b < 8; b++) {
-        value |= (in[b] & 0xFFL) << (8 * b);
+        value |= (in[b] & 0xFFL) << 8 * b;
       }
       values[i] = Double.longBitsToDouble(value);
     }
@@ -174,7 +174,7 @@ public class GraphModel {
     for (int i = 0; i < values.length; i++) {
       int value = Float.floatToIntBits(values[i]);
       for (int b = 0; b < 4; b++) {
-        in[b] = (byte) ((value >> (8 * b)) & 0xFFL);
+        in[b] = (byte) (value >> 8 * b & 0xFFL);
       }
       byteBuffer.put(in);
     }
@@ -189,7 +189,7 @@ public class GraphModel {
       byteBuffer.get(in);
       int value = 0;
       for (int b = 0; b < 4; b++) {
-        value |= (in[b] & 0xFF) << (8 * b);
+        value |= (in[b] & 0xFF) << 8 * b;
       }
       values[i] = Float.intBitsToFloat(value);
     }
@@ -389,7 +389,7 @@ public class GraphModel {
     public Map<String, String> getProperties() {
       Map<String, AttrValue> attrMap = getNodeDef().getAttrMap();
       return attrMap.entrySet().stream()
-          .collect(Collectors.toMap(Map.Entry::getKey, (stringAttrValueEntry) -> {
+          .collect(Collectors.toMap(stringAttrValueEntry1 -> stringAttrValueEntry1.getKey(), stringAttrValueEntry -> {
             if (stringAttrValueEntry.getKey().equals("value")) {
               AttrValue value = stringAttrValueEntry.getValue();
               final String s = value.toBuilder().build().toString();
@@ -469,7 +469,7 @@ public class GraphModel {
             .putAttr("dtype", AttrValue.newBuilder().setType(DataType.DT_FLOAT).build())
             .build());
       }
-      subgraphNodes(inputs).stream().map(GraphModel.GraphNode::getNodeDef).forEach(builder::addNode);
+      subgraphNodes(inputs).stream().map(graphNode -> graphNode.getNodeDef()).forEach(value -> builder.addNode(value));
       return builder.build();
     }
 

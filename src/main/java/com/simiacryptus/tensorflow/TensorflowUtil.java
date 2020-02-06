@@ -67,7 +67,7 @@ public class TensorflowUtil {
 
   public static void validate(@Nonnull GraphDef graphDef) {
     List<String> names = graphDef.getNodeList().stream().map(x -> x.getName()).collect(Collectors.toList());
-    graphDef.getNodeList().stream().map(x -> x.getName()).distinct().forEach(names::remove);
+    graphDef.getNodeList().stream().map(x -> x.getName()).distinct().forEach(o -> names.remove(o));
     if (!names.isEmpty()) {
       throw new IllegalStateException("Duplicate names: " + RefUtil.get(names.stream().reduce((a, b) -> a + ", " + b)));
     }
@@ -113,7 +113,7 @@ public class TensorflowUtil {
           throw new NoSuchElementException(String.format(
               "%s not found in %s",
               name,
-              RefUtil.get(nodeList.stream().map(NodeDef::getName).reduce((a, b) -> a + "," + b))
+              RefUtil.get(nodeList.stream().map(nodeDef1 -> nodeDef1.getName()).reduce((a, b) -> a + "," + b))
           ));
         });
     int index = nodeList.indexOf(nodeDef);
