@@ -19,7 +19,6 @@
 
 package com.simiacryptus.tensorflow;
 
-import com.google.protobuf.AbstractMessage;
 import com.simiacryptus.notebook.MarkdownNotebookOutput;
 import com.simiacryptus.util.test.SysOutInterceptor;
 import com.simiacryptus.util.test.TestCategories;
