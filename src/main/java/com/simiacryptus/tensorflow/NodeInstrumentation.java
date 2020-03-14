@@ -107,7 +107,7 @@ public class NodeInstrumentation {
   }
 
   @Nonnull
-  public ArrayList<NodeDef> instrument(@Nonnull GraphDef.Builder graphBuilder, @Nonnull NodeDef node) {
+  public ArrayList<NodeDef> instrument(GraphDef.Builder graphBuilder, NodeDef node) {
     ArrayList<NodeDef> nodeDefs = new ArrayList<>();
     String label = node.getName();
 

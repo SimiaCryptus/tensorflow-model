@@ -74,7 +74,7 @@ public class TensorflowUtil {
   }
 
   @Nonnull
-  public static String addConst(@Nonnull GraphDef.Builder graphBuilder, @Nonnull String name, TensorShapeProto shape, String... label) {
+  public static String addConst(GraphDef.Builder graphBuilder, String name, TensorShapeProto shape, String... label) {
     graphBuilder.addNode(newConst(name, shape, label));
     return name;
   }
@@ -106,7 +106,7 @@ public class TensorflowUtil {
     return build;
   }
 
-  public static void editNode(@Nonnull GraphDef.Builder graphBuilder, String name, @Nonnull @RefAware Function<NodeDef.Builder, NodeDef.Builder> edit) {
+  public static void editNode(GraphDef.Builder graphBuilder, String name, @Nonnull @RefAware Function<NodeDef.Builder, NodeDef.Builder> edit) {
     List<NodeDef> nodeList = graphBuilder.getNodeList();
     NodeDef nodeDef = nodeList.stream().filter(x -> x.getName().equals(name)).findAny()
         .orElseGet(() -> {
@@ -122,7 +122,7 @@ public class TensorflowUtil {
     RefUtil.freeRef(edit);
   }
 
-  public static void editNodes(@Nonnull GraphDef.Builder graphBuilder, @Nonnull Function<NodeDef, NodeDef> edit) {
+  public static void editNodes(GraphDef.Builder graphBuilder, Function<NodeDef, NodeDef> edit) {
     new ArrayList<>(graphBuilder.getNodeList()).stream().forEach(previousValue -> {
       NodeDef newValue = edit.apply(previousValue);
       if (newValue != previousValue) {
@@ -227,7 +227,7 @@ public class TensorflowUtil {
       Ops ops = Ops.create(sumGraph);
       in1 = ops.placeholder(dtype).asOutput();
       in2 = ops.placeholder(dtype).asOutput();
-      out = ops.add(
+      out = ops.math.add(
           in1,
           in2
       ).asOutput();

@@ -30,7 +30,7 @@ import org.tensorflow.Tensor;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.Summary;
 import org.tensorflow.op.Ops;
-import org.tensorflow.op.core.DecodeJpeg;
+import org.tensorflow.op.image.DecodeJpeg;
 
 import javax.annotation.Nonnull;
 import java.io.File;
@@ -68,12 +68,12 @@ public class InceptionClassifier implements AutoCloseable {
     try (Graph graph = new Graph()) {
       Ops ops = Ops.create(graph);
       final Output<Float> normalizedImage =
-          ops.div(
-              ops.sub(
-                  ops.resizeBilinear(
+          ops.math.div(
+              ops.math.sub(
+                  ops.image.resizeBilinear(
                       ops.expandDims(
-                          ops.cast(
-                              ops.decodeJpeg(
+                          ops.dtypes.cast(
+                              ops.image.decodeJpeg(
                                   ops.constant(imageBytes),
                                   DecodeJpeg.channels(3l)),
                               Float.class),
@@ -107,8 +107,8 @@ public class InceptionClassifier implements AutoCloseable {
     try (Graph graph = new Graph()) {
       graph.importGraphDef(graphDef.toByteArray());
       Ops ops = Ops.create(graph);
-      Output<String> summaryOutput = ops.mergeSummary(Arrays.asList(
-          ops.histogramSummary(ops.constant("test"), graph.operation("output").output(0))
+      Output<String> summaryOutput = ops.summary.mergeSummary(Arrays.asList(
+          ops.summary.histogramSummary(ops.constant("test"), graph.operation("output").output(0))
       )).summary();
       try (Session session = new Session(graph)) {
         Session.Runner runner = session.runner()
