@@ -19,7 +19,7 @@
 
 package com.simiacryptus.tensorflow;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.tensorflow.framework.GraphDef;
 
 import javax.annotation.Nonnull;

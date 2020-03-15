@@ -21,14 +21,13 @@ package com.simiacryptus.tensorflow;
 
 import com.simiacryptus.notebook.MarkdownNotebookOutput;
 import com.simiacryptus.util.test.SysOutInterceptor;
-import com.simiacryptus.util.test.TestCategories;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.tensorflow.Graph;
 import org.tensorflow.Output;
 import org.tensorflow.TensorFlowException;
@@ -54,7 +53,7 @@ public class InceptionTest {
   }
 
   @Test
-  @Category(TestCategories.ResearchCode.class)
+  @Tag("ResearchCode")
   public void testReferenceData() throws IOException {
     System.out.println(GraphDef.parseFrom(FileUtils.readFileToByteArray(new File("H:\\SimiaCryptus\\tensorflow\\tensorflow\\examples\\tutorials\\mnist\\model\\train.pb"))));
     TFUtil.streamEvents("H:\\SimiaCryptus\\tensorflow\\tensorflow\\examples\\tutorials\\mnist\\tmp\\test\\events.out.tfevents.1549408929.DESKTOP-L7C95P7")
@@ -63,7 +62,7 @@ public class InceptionTest {
   }
 
   @Test
-  @Category(TestCategories.ResearchCode.class)
+  @Tag("ResearchCode")
   public void testClassification() throws Exception {
     File reportFile = new File("target/out/" + new SimpleDateFormat("yyyyMMddHHmm").format(new Date()));
     MarkdownNotebookOutput log = new MarkdownNotebookOutput(reportFile, true);
