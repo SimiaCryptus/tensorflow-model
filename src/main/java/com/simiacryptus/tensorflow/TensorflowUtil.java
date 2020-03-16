@@ -23,6 +23,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.simiacryptus.ref.lang.RefAware;
 import com.simiacryptus.ref.lang.RefUtil;
+import com.simiacryptus.util.Util;
 import org.tensorflow.*;
 import org.tensorflow.framework.DataType;
 import org.tensorflow.framework.*;
@@ -59,7 +60,7 @@ public class TensorflowUtil {
       try {
         validate(GraphDef.parseFrom(bytes));
       } catch (InvalidProtocolBufferException e) {
-        throw new RuntimeException(e);
+        throw Util.throwException(e);
       }
       return bytes;
     }

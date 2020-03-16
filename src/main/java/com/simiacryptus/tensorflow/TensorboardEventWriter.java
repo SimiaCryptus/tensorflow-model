@@ -20,6 +20,7 @@
 package com.simiacryptus.tensorflow;
 
 import com.google.common.hash.Hashing;
+import com.simiacryptus.util.Util;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.MetaGraphDef;
 import org.tensorflow.framework.RunMetadata;
@@ -61,7 +62,7 @@ public class TensorboardEventWriter implements AutoCloseable {
             if (null == hostName) hostName = InetAddress.getLocalHost().getHostAddress();
             if (null == hostName) hostName = "local";
           } catch (Throwable e) {
-            throw new RuntimeException(e);
+            throw Util.throwException(e);
           }
         }
       }
@@ -166,7 +167,7 @@ public class TensorboardEventWriter implements AutoCloseable {
     try {
       write(Summary.parseFrom(summaryBytes));
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw Util.throwException(e);
     }
   }
 

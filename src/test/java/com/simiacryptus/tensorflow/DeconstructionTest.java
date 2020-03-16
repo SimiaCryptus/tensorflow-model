@@ -19,6 +19,7 @@
 
 package com.simiacryptus.tensorflow;
 
+import com.simiacryptus.util.Util;
 import org.junit.jupiter.api.Test;
 import org.tensorflow.framework.GraphDef;
 
@@ -42,9 +43,9 @@ public class DeconstructionTest {
       try {
         launchTensorboard(writeGraph(graphDef, new File("target/" + now + "/tensorboard/" + UUID.randomUUID().toString()), UUID.randomUUID().toString()));
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        throw Util.throwException(e);
       } catch (URISyntaxException e) {
-        throw new RuntimeException(e);
+        throw Util.throwException(e);
       }
     });
   }
@@ -55,7 +56,7 @@ public class DeconstructionTest {
         JOptionPane.showConfirmDialog(null, "OK to continue");
         tensorboard.destroyForcibly();
       } catch (Exception e) {
-        throw new RuntimeException(e);
+        throw Util.throwException(e);
       }
     });
   }

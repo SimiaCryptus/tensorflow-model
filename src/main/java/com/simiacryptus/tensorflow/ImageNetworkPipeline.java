@@ -72,7 +72,7 @@ public abstract class ImageNetworkPipeline {
       byte[] graphDefBytes = IOUtils.toByteArray(zipFile.getInputStream(zipFile.getEntry(zipPath)));
       graphDef = GraphDef.parseFrom(graphDefBytes);
     } catch (Throwable e) {
-      throw new RuntimeException(e);
+      throw Util.throwException(e);
     }
     return graphDef;
   }

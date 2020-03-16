@@ -22,6 +22,7 @@ package com.simiacryptus.tensorflow;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.primitives.Floats;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.simiacryptus.util.Util;
 import org.tensorflow.framework.*;
 
 import javax.annotation.Nonnull;
@@ -60,7 +61,7 @@ public class GraphModel {
     try {
       graphDef = GraphDef.parseFrom(bytes);
     } catch (InvalidProtocolBufferException e) {
-      throw new RuntimeException(e);
+      throw Util.throwException(e);
     }
     return graphDef;
   }

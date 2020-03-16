@@ -20,6 +20,7 @@
 package com.simiacryptus.tensorflow;
 
 import com.simiacryptus.notebook.MarkdownNotebookOutput;
+import com.simiacryptus.util.Util;
 import com.simiacryptus.util.test.SysOutInterceptor;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -95,7 +96,7 @@ public class InceptionTest {
       try {
         tensorboard.waitFor(1, TimeUnit.MINUTES);
       } catch (InterruptedException e) {
-        throw new RuntimeException(e);
+        throw Util.throwException(e);
       }
     });
   }

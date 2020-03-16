@@ -151,7 +151,7 @@ public class TFUtil {
         try {
           return dataInput.available() > 0;
         } catch (IOException e) {
-          throw new RuntimeException(e);
+          throw Util.throwException(e);
         }
       }
 
@@ -160,7 +160,7 @@ public class TFUtil {
         try {
           return Event.parseFrom(TensorboardEventWriter.read(dataInput));
         } catch (IOException e) {
-          throw new RuntimeException(e);
+          throw Util.throwException(e);
         }
       }
     }, -1, Spliterator.ORDERED), false);

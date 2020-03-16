@@ -59,7 +59,7 @@ public class InceptionClassifier implements AutoCloseable {
       graphDef = GraphDef.parseFrom(graphDefBytes);
       eventWriter = new TensorboardEventWriter(outputLocation, graphDef);
     } catch (Throwable e) {
-      throw new RuntimeException(e);
+      throw Util.throwException(e);
     }
   }
 
@@ -121,12 +121,12 @@ public class InceptionClassifier implements AutoCloseable {
         try {
           summary = Summary.parseFrom(expect.bytesValue());
         } catch (InvalidProtocolBufferException e) {
-          throw new RuntimeException(e);
+          throw Util.throwException(e);
         }
         try {
           eventWriter.write(summary);
         } catch (IOException e) {
-          throw new RuntimeException(e);
+          throw Util.throwException(e);
         }
         return result.outputs.get(0).expect(Float.class);
       }
