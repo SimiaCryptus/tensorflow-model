@@ -1,25 +1,25 @@
 
 # BlueJ files
-*.class
 # Compiled class file
-*.ctxt
-*.ear
-../.gitignore
-hs_err_pid*
-.idea/
-*.jar
-*.log
 # Log file
 # Mobile Tools for Java (J2ME)
-.mtj.tmp/
-*.nar
 # Package Files #
-*.rar
-target/
-*.tar.gz
-tensorflow-model.iml
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+*.class
+*.ctxt
+*.ear
+*.hprof
+*.jar
+*.log
+*.nar
+*.rar
+*.tar.gz
 *.war
 *.zip
-*.hprof
-
+../.gitignore
+.idea/
+.mtj.tmp/
+hs_err_pid*
+target/
+tensorflow-model.iml
+tensorflow-model.iml
