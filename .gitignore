@@ -12,6 +12,7 @@
 *.jar
 *.log
 *.nar
+*.pem
 *.rar
 *.tar.gz
 *.war
